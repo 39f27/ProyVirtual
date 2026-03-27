@@ -1,0 +1,173 @@
+{% extends "base.html" %} {% block title %}Agregar Programa{% endblock %}
+{%block content %}
+<h1>Agregar Programa</h1>
+<form
+  method="POST"
+  action="{{ url_for('agregar') }}"
+  enctype="multipart/form-data"
+>
+  {{ form.csrf_token }}
+
+  <div class="mb-3">
+    {{ form.nombre.label(class="form-label") }} {{
+    form.nombre(class="form-control", **{'aria-describedby': 'nombreHelp'}) }}
+    {% for error in form.nombre.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.codigo.label(class="form-label") }} {{
+    form.codigo(class="form-control", **{'aria-describedby': 'codigoHelp'}) }}
+    {% for error in form.codigo.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.asignatura_unidad_Curricular.label(class="form-label") }} {{
+    form.asignatura_unidad_Curricular(class="form-control",
+    **{'aria-describedby': 'asignatura_unidad_CurricularHelp'}) }} {% for error
+    in form.asignatura_unidad_Curricular.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.area_curricular.label(class="form-label") }} {{
+    form.area_curricular(class="form-control", **{'aria-describedby':
+    'area_curricularHelp'}) }} {% for error in form.area_curricular.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.eje_curricular.label(class="form-label") }} {{
+    form.eje_curricular(class="form-control", **{'aria-describedby':
+    'eje_curricularHelp'}) }} {% for error in form.eje_curricular.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.semestre.label(class="form-label") }} {{
+    form.semestre(class="form-control", **{'aria-describedby': 'semestreHelp'})
+    }} {% for error in form.semestre.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.coordinador_asignatura_unidad.label(class="form-label") }} {{
+    form.coordinador_asignatura_unidad(class="form-control",
+    **{'aria-describedby': 'coordinador_asignatura_unidadHelp'}) }} {% for error
+    in form.coordinador_asignatura_unidad.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.lapso_academico.label(class="form-label") }} {{
+    form.lapso_academico(class="form-control", **{'aria-describedby':
+    'lapso_academicoHelp'}) }} {% for error in form.lapso_academico.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.prelacion.label(class="form-label") }} {{
+    form.prelacion(class="form-control", **{'aria-describedby':
+    'prelacionHelp'}) }} {% for error in form.prelacion.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.modalidad.label(class="form-label") }} {{
+    form.modalidad(class="form-control", **{'aria-describedby':
+    'modalidadHelp'}) }} {% for error in form.modalidad.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.docentes.label(class="form-label") }} {{
+    form.docentes(class="form-control", **{'aria-describedby': 'docentesHelp'})
+    }} {% for error in form.docentes.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.unidad_credito.label(class="form-label") }} {{
+    form.unidad_credito(class="form-control", **{'aria-describedby':
+    'unidad_creditoHelp'}) }} {% for error in form.unidad_credito.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.credito_academico.label(class="form-label") }} {{
+    form.credito_academico(class="form-control", **{'aria-describedby':
+    'credito_academicoHelp'}) }} {% for error in form.credito_academico.errors
+    %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.ht.label(class="form-label") }} {{ form.ht(class="form-control",
+    **{'aria-describedby': 'htHelp'}) }} {% for error in form.ht.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.hp.label(class="form-label") }} {{ form.hp(class="form-control",
+    **{'aria-describedby': 'hpHelp'}) }} {% for error in form.hp.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.htp.label(class="form-label") }} {{ form.htp(class="form-control",
+    **{'aria-describedby': 'htpHelp'}) }} {% for error in form.htp.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.descripcion.label(class="form-label") }} {{
+    form.descripcion(class="form-control", **{'aria-describedby':
+    'descripcionHelp'}) }} {% for error in form.descripcion.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.fecha_ultima_correcion.label(class="form-label") }} {{
+    form.fecha_ultima_correcion(class="form-control", **{'aria-describedby':
+    'fecha_ultima_correcionHelp'}) }} {% for error in
+    form.fecha_ultima_correcion.errors %}
+    <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+  <!-- NUEVO CAMPO para adjuntar archivo Word -->
+  <div class="mb-3">
+    <label for="archivo_word" class="form-label">Adjuntar archivo Word</label>
+    <input
+      type="file"
+      id="archivo_word"
+      name="archivo_word"
+      class="form-control"
+      accept=".doc,.docx"
+    />
+    {% if form.archivo_word.errors %} {% for error in form.archivo_word.errors
+    %}
+    <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %} {% endif %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Guardar cambios</button>
+</form>
+{% endblock %}

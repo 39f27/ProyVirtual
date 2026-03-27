@@ -1,0 +1,72 @@
+{% extends "base.html" %} {% block title %}Lista de Programas{% endblock %} {%
+block content %}
+<h1>Lista de Programas</h1>
+<a href="{{ url_for('agregar') }}" class="btn btn-success mb-3"
+  >➕ Agregar Programa</a
+>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Código</th>
+      <th>Asignatura</th>
+      <th>Área</th>
+      <th>Eje</th>
+      <th>Semestre</th>
+      <th>Docentes Relacionados</th>
+      <th>Archivo Word</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for programa in programas %}
+    <tr>
+      <td>{{ programa.nombre }}</td>
+      <td>{{ programa.codigo }}</td>
+      <td>{{ programa.asignatura_unidad_Curricular }}</td>
+      <td>{{ programa.area_curricular }}</td>
+      <td>{{ programa.eje_curricular }}</td>
+      <td>{{ programa.semestre }}</td>
+      <td>
+        {% if programa.docentes_relacionados %} {% for docente in
+        programa.docentes_relacionados %} {{ docente.nombre }}<br />
+        {% endfor %} {% else %}
+        <span class="text-muted">Sin docentes</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if programa.archivo_word %}
+        <a
+          href="{{ url_for('descargar_archivo', filename=programa.archivo_word) }}"
+          target="_blank"
+          class="btn btn-outline-primary btn-sm"
+        >
+          Descargar
+        </a>
+        {% else %}
+        <span class="text-muted">No adjunto</span>
+        {% endif %}
+      </td>
+      <td>
+        <a
+          href="{{ url_for('editar', id=programa.id) }}"
+          class="btn btn-warning btn-sm"
+          >Editar</a
+        >
+        <a
+          href="{{ url_for('eliminar', id=programa.id) }}"
+          class="btn btn-danger btn-sm"
+          onclick="return confirm('¿Eliminar este programa?')"
+          >Eliminar</a
+        >
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="9" class="text-center">No hay programas registrados</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

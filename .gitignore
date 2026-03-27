@@ -1,0 +1,25 @@
+# Python/Flask/SQLAlchemy
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.test*/
+*.db
+*.sqlite
+*.sqlite3
+programas.db
+migrations/versions/*.py
+
+# Logs y temporales
+*.log
+logs/
+tmp/
+
+# VS Code sensibles
+.vscode/settings.json
+.vscode/launch.json
+
+# MySQL local (usa remoto)
+my.cnf
