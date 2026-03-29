@@ -1,3 +1,4 @@
+HEAD
 # Python/Flask/SQLAlchemy
 __pycache__/
 *.pyc
@@ -23,3 +24,30 @@ tmp/
 
 # MySQL local (usa remoto)
 my.cnf
+
+# Python/Flask/SQLAlchemy
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.test*/
+*.db
+*.sqlite
+*.sqlite3
+programas.db
+migrations/versions/*.py
+
+# Logs y temporales
+*.log
+logs/
+tmp/
+
+# VS Code sensibles
+.vscode/settings.json
+.vscode/launch.json
+
+# MySQL local (usa remoto)
+my.cnf
+54d312e94e6c7814e6d87c8190a78e67ff49924e
