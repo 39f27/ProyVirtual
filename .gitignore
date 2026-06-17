@@ -1,29 +1,6 @@
-# Entornos sensibles
-.env
-.env.local
-
-# Python/Flask/SQLAlchemy
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-venv/
-env/
-.test*/
-*.db
-*.sqlite
-*.sqlite3
-programas.db
-migrations/versions/*.py
-
-# Logs y temporales
-*.log
-logs/
-tmp/
-
-# VS Code sensibles
-.vscode/settings.json
-.vscode/launch.json
-
-# MySQL local
-my.cnf
+test/ 
+venv/ 
+__pycache__/ 
+.vscode/ 
+*.db 
+migrations/**/__pycache__/ 
