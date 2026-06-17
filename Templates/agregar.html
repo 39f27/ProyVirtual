@@ -1,5 +1,5 @@
-{% extends "base.html" %} {% block title %}Agregar Programa{% endblock %}
-{%block content %}
+{% extends "base.html" %} {% block title %}Agregar Programa{% endblock %} {%
+block content %}
 <h1>Agregar Programa</h1>
 <form
   method="POST"
@@ -91,11 +91,14 @@
   </div>
 
   <div class="mb-3">
-    {{ form.docentes.label(class="form-label") }} {{
-    form.docentes(class="form-control", **{'aria-describedby': 'docentesHelp'})
-    }} {% for error in form.docentes.errors %}
-    <div class="invalid-feedback">{{ error }}</div>
+    {{ form.docente.label(class="form-label") }} {{
+    form.docente(class="form-select", **{'aria-describedby': 'docenteHelp'}) }}
+    {% for error in form.docente.errors %}
+    <div class="invalid-feedback d-block">{{ error }}</div>
     {% endfor %}
+    <div id="docenteHelp" class="form-text">
+      Seleccione un docente de la lista maestra cargada en el sistema.
+    </div>
   </div>
 
   <div class="mb-3">
@@ -152,7 +155,7 @@
     <div class="invalid-feedback">{{ error }}</div>
     {% endfor %}
   </div>
-  <!-- NUEVO CAMPO para adjuntar archivo Word -->
+
   <div class="mb-3">
     <label for="archivo_word" class="form-label">Adjuntar archivo Word</label>
     <input

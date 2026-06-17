@@ -9,6 +9,7 @@ from flask_wtf.file import FileField, FileAllowed
 from werkzeug.utils import secure_filename
 from wtforms import StringField, IntegerField, TextAreaField, DateField, SubmitField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms_alchemy import QuerySelectField  # <-- Importación agregada con éxito
 from sqlalchemy import Date, Index
 from sqlalchemy.exc import IntegrityError
 from decouple import config
@@ -65,7 +66,7 @@ class Programa(db.Model):
     lapso_academico = db.Column(db.String(50), nullable=False)
     prelacion = db.Column(db.String(50), nullable=True)
     modalidad = db.Column(db.String(50), nullable=False)
-    docentes = db.Column(db.String(200), nullable=False)
+    docentes = db.Column(db.String(200), nullable=False)  # Mantenido por compatibilidad de migración
     unidad_credito = db.Column(db.Integer, nullable=False)
     credito_academico = db.Column(db.Integer, nullable=False)
     ht = db.Column(db.Integer, nullable=False)
@@ -86,6 +87,11 @@ class Programa(db.Model):
         return (f"<Programa {self.nombre} (id={self.id}), area_curricular='{self.area_curricular}', "
                 f"eje_curricular='{self.eje_curricular}', fecha_ultima_correcion={self.fecha_ultima_correcion}, docente_id={self.docente_id}>")
 
+# =================== FUNCIONES AUXILIARES FORMULARIO ===================
+
+def obtener_docentes():
+    return Docente.query.all()
+
 # =================== FORMULARIO ===================
 
 class ProgramaForm(FlaskForm):
@@ -99,21 +105,29 @@ class ProgramaForm(FlaskForm):
     lapso_academico = StringField('Lapso Academico', validators=[DataRequired(), Length(max=50)])
     prelacion = StringField('Prelacion', validators=[Optional(), Length(max=50)])
     modalidad = StringField('Modalidad', validators=[DataRequired(), Length(max=50)])
-    docentes = StringField('Docentes', validators=[DataRequired(), Length(max=200)])
+    
+    # REEMPLAZADO: Ahora es un menú desplegable mapeado a los datos maestros de la BD
+    docente = QuerySelectField(
+        'Docente Responsable',
+        query_factory=obtener_docentes,
+        allow_blank=True,
+        blank_text='-- Seleccione un Docente Maestro --',
+        get_label='nombre'
+    )
+    
     unidad_credito = IntegerField('Unidad de Credito', validators=[DataRequired(), NumberRange(min=1, max=10)])
     credito_academico = IntegerField('Credito Academico', validators=[DataRequired(), NumberRange(min=1, max=10)])
     ht = IntegerField('HT', validators=[DataRequired(), NumberRange(min=1)])
     hp = IntegerField('HP', validators=[DataRequired(), NumberRange(min=1)])
     htp = IntegerField('HTP', validators=[DataRequired(), NumberRange(min=1)])
     descripcion = TextAreaField('Descripcion', validators=[DataRequired()])
-    # Cambié a Optional para reflejar el nullable=True en el modelo
     fecha_ultima_correcion = DateField('Fecha Ultima Correccion', validators=[Optional()])
     archivo_word = FileField('Documento Word', validators=[
         FileAllowed(['doc', 'docx'], 'Solo archivos Word (.doc, .docx)')
     ])
     submit = SubmitField('Guardar')
 
-# =================== FUNCIONES AUXILIARES ===================
+# =================== FUNCIONES AUXILIARES ARCHIVOS ===================
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -137,7 +151,6 @@ def procesar_word(file_storage, programa_id):
 
         return {'ruta_archivo': filename_final, 'hash': file_hash}
     except Exception as e:
-        # En caso de error, intentar borrar archivo temporal si existe
         if os.path.exists(temp_path):
             os.remove(temp_path)
         raise e
@@ -165,7 +178,8 @@ def agregar():
                 lapso_academico=form.lapso_academico.data,
                 prelacion=form.prelacion.data,
                 modalidad=form.modalidad.data,
-                docentes=form.docentes.data,
+                docentes="",  # Campo de texto plano por defecto vacío
+                docente=form.docente.data,  # Asignación del objeto Docente mediante la relación formal
                 unidad_credito=form.unidad_credito.data,
                 credito_academico=form.credito_academico.data,
                 ht=form.ht.data,
@@ -175,7 +189,7 @@ def agregar():
                 fecha_ultima_correcion=form.fecha_ultima_correcion.data
             )
             db.session.add(nuevo_programa)
-            db.session.flush()  # para obtener id antes del commit
+            db.session.flush()  # Obtener ID único antes del commit para procesar el Word
 
             file = form.archivo_word.data
             if file and allowed_file(file.filename):
@@ -206,6 +220,10 @@ def editar(id):
     if form.validate_on_submit():
         try:
             form.populate_obj(programa)
+            
+            # Asegurar correspondencia del campo relacional mapeado
+            programa.docente = form.docente.data
+
             archivo = request.files.get('archivo_word')
             if archivo and archivo.filename:
                 if allowed_file(archivo.filename):
@@ -233,7 +251,6 @@ def editar(id):
 def eliminar(id):
     programa = Programa.query.get_or_404(id)
     try:
-        # Intentar borrar archivo asociado si existe
         if programa.archivo_word:
             archivo_path = os.path.join(app.config['UPLOAD_FOLDER'], programa.archivo_word)
             if os.path.exists(archivo_path):
@@ -270,5 +287,3 @@ if __name__ == "__main__":
     with app.app_context():        
         db.create_all()
     app.run(debug=True, host='0.0.0.0', port=5001)
-
-

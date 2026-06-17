@@ -28,13 +28,16 @@ block content %}
       <td>{{ programa.area_curricular }}</td>
       <td>{{ programa.eje_curricular }}</td>
       <td>{{ programa.semestre }}</td>
+
       <td>
-        {% if programa.docentes_relacionados %} {% for docente in
-        programa.docentes_relacionados %} {{ docente.nombre }}<br />
-        {% endfor %} {% else %}
-        <span class="text-muted">Sin docentes</span>
+        {% if programa.docente %}
+        <span class="badge bg-success">{{ programa.docente.nombre }}</span>
+        <br /><small class="text-muted">{{ programa.docente.email }}</small>
+        {% elif programa.docentes %} {{ programa.docentes }} {% else %}
+        <span class="text-muted">Sin docentes asignados</span>
         {% endif %}
       </td>
+
       <td>
         {% if programa.archivo_word %}
         <a
