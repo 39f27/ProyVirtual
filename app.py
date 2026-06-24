@@ -1,7 +1,9 @@
 import os
 import hashlib
+from datetime import datetime
+from sqlalchemy.orm import joinedload
 
-from flask import Flask, flash, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, flash, render_template, request, redirect, url_for, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf import FlaskForm
@@ -9,44 +11,119 @@ from flask_wtf.file import FileField, FileAllowed
 from werkzeug.utils import secure_filename
 from wtforms import StringField, IntegerField, TextAreaField, DateField, SubmitField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
-from wtforms_alchemy import QuerySelectField  # <-- Importación agregada con éxito
+from wtforms_alchemy import QuerySelectField
 from sqlalchemy import Date, Index
 from sqlalchemy.exc import IntegrityError
 from decouple import config
 from dotenv import load_dotenv
 
-# Crear la aplicación Flask
+# ==========================================
+# 1. INICIALIZACIÓN DE LA APP Y CONFIGURACIÓN DE BD
+# ==========================================
+load_dotenv()
+
 app = Flask(__name__)
 
-# Configuración
-app.config['SECRET_KEY'] = config('SECRET_KEY')  # Busca en .env o en entorno
-
-if not app.config['SECRET_KEY']:
-    raise RuntimeError("SECRET_KEY no está definida en .env ni en variables de entorno.")
-
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Botella.0101@localhost/programas_ucla'
+# Configuración de la base de datos (se asume que usas variables de entorno o decouple)
+app.config['SECRET_KEY'] = config('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = config('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(basedir, 'uploads', 'programas')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max
-
-ALLOWED_EXTENSIONS = {'doc', 'docx'}
-
-# Crear directorio de subida si no existe
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Inicializar extensiones
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# =================== MODELOS ===================
+# ==========================================
+# 2. MODELOS DEL DIAGRAMA ER INSTITUCIONAL (UCLA)
+# ==========================================
+
+class UsuarioT(db.Model):
+    __tablename__ = 'usuario_t'
+    cod_usu = db.Column(db.String(50), primary_key=True)
+    nom_usu = db.Column(db.String(100), nullable=True)
+    cla_usu = db.Column(db.String(100), nullable=True)  # Hash de contraseña
+    rol_usu = db.Column(db.String(50), nullable=True)
+
+class DecanatoT(db.Model):
+    __tablename__ = 'decanato_t'
+    cod_dec = db.Column(db.String(50), primary_key=True)
+    nom_dec = db.Column(db.String(150), nullable=True)
+    carreras = db.relationship('CarreraT', backref='decanato', lazy=True)
+
+class CarreraT(db.Model):
+    __tablename__ = 'carrera_t'
+    cod_car = db.Column(db.String(50), primary_key=True)
+    nom_car = db.Column(db.String(150), nullable=True)
+    cod_dec = db.Column(db.String(50), db.ForeignKey('decanato_t.cod_dec'), nullable=True)
+    carreras_materias = db.relationship('CarreraMateriaM', backref='carrera', lazy=True)
+
+class MateriasProgramasT(db.Model):
+    __tablename__ = 'materias_programas_t'
+    cod_mat = db.Column(db.String(50), primary_key=True)
+    nom_mat = db.Column(db.String(150), nullable=True)
+    materias_carreras = db.relationship('CarreraMateriaM', backref='materia', lazy=True)
+    prelaciones = db.relationship('PrelacionM', backref='materia', lazy=True)
+
+class CarreraMateriaM(db.Model):
+    __tablename__ = 'carrera_materia_m'
+    cod_car_mat = db.Column(db.String(50), primary_key=True)
+    cod_car = db.Column(db.String(50), db.ForeignKey('carrera_t.cod_car'), nullable=True)
+    cod_mat = db.Column(db.String(50), db.ForeignKey('materias_programas_t.cod_mat'), nullable=True)
+    revisiones = db.relationship('RevisionProgramaM', backref='carrera_materia', lazy=True)
+
+class PrelacionM(db.Model):
+    __tablename__ = 'prelacion_m'
+    cod_pre = db.Column(db.String(50), primary_key=True)
+    cod_mat = db.Column(db.String(50), db.ForeignKey('materias_programas_t.cod_mat'), nullable=True)
+    cod_mat_pre = db.Column(db.String(50), nullable=True)
+
+class LapsoAcademicoT(db.Model):
+    __tablename__ = 'lapso_academico_t'
+    cod_lap = db.Column(db.String(50), primary_key=True)
+    des_lap = db.Column(db.String(100), nullable=True)
+    fec_ini = db.Column(db.Date, nullable=True)
+    fec_fin = db.Column(db.Date, nullable=True)
+    est_act = db.Column(db.String(1), nullable=True)
+    revisiones = db.relationship('RevisionProgramaM', backref='lapso_academico', lazy=True)
+
+class DocenteT(db.Model):
+    __tablename__ = 'docente_t'
+    cod_doc = db.Column(db.String(50), primary_key=True)
+    nom_doc = db.Column(db.String(100), nullable=True)
+    ape_doc = db.Column(db.String(100), nullable=True)
+    ced_doc = db.Column(db.String(20), nullable=True)
+    tel_doc = db.Column(db.String(50), nullable=True)
+    cor_doc = db.Column(db.String(100), nullable=True)
+    fec_doc = db.Column(db.String(50), nullable=True)
+    nac_doc = db.Column(db.String(50), nullable=True)
+    sex_doc = db.Column(db.String(20), nullable=True)
+    revisiones = db.relationship('RevisionProgramaM', backref='docente_t', lazy=True)
+
+class RevisionProgramaM(db.Model):
+    __tablename__ = 'revision_programa_m'
+    cod_pro = db.Column(db.String(50), primary_key=True)
+    cod_doc = db.Column(db.String(50), db.ForeignKey('docente_t.cod_doc'), nullable=True)
+    cod_car_mat = db.Column(db.String(50), db.ForeignKey('carrera_materia_m.cod_car_mat'), nullable=True)
+    fec_rev = db.Column(db.Date, nullable=True)
+    est_rev = db.Column(db.String(50), nullable=True)
+    nom_arc = db.Column(db.String(255), nullable=True)
+    obs_rev = db.Column(db.Text, nullable=True)
+    cod_lap = db.Column(db.String(50), db.ForeignKey('lapso_academico_t.cod_lap'), nullable=True)
+
+# ==========================================
+# 3. TRUCO DE CONTEXTO ABSOLUTO PARA MIGRACIONES
+# ==========================================
+# Al referenciar explícitamente las clases aquí, garantizamos que Alembic las procese obligatoriamente.
+_forzar_mapeo_ucla = [UsuarioT, DecanatoT, CarreraT, MateriasProgramasT, CarreraMateriaM, PrelacionM, LapsoAcademicoT, DocenteT, RevisionProgramaM]
+
+# ==========================================
+# 4. MODELOS OPERATIVOS DE SISTEMA
+# ==========================================
 
 class Docente(db.Model):
     __tablename__ = 'docentes'
-
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=True)  # opcional
+    email = db.Column(db.String(120), unique=True, nullable=True)
     programas = db.relationship('Programa', back_populates='docente')
 
     def __repr__(self):
@@ -54,40 +131,58 @@ class Docente(db.Model):
 
 class Programa(db.Model):
     __tablename__ = 'programas'
-
     id = db.Column(db.Integer, primary_key=True)
+    codigo = db.Column(db.String(20), unique=True, nullable=False)
     nombre = db.Column(db.String(200), nullable=False)
-    asignatura_unidad_Curricular = db.Column(db.String(100), nullable=False)
+    asignatura_unidad_Curricular = db.Column(db.String(150), nullable=False)
     area_curricular = db.Column(db.String(100), nullable=False)
     eje_curricular = db.Column(db.String(100), nullable=False)
-    semestre = db.Column(db.Integer, nullable=False)
-    codigo = db.Column(db.String(20), nullable=False)
-    coordinador_asignatura_unidad = db.Column(db.String(100), nullable=False)
-    lapso_academico = db.Column(db.String(50), nullable=False)
-    prelacion = db.Column(db.String(50), nullable=True)
-    modalidad = db.Column(db.String(50), nullable=False)
-    docentes = db.Column(db.String(200), nullable=False)  # Mantenido por compatibilidad de migración
-    unidad_credito = db.Column(db.Integer, nullable=False)
-    credito_academico = db.Column(db.Integer, nullable=False)
-    ht = db.Column(db.Integer, nullable=False)
-    hp = db.Column(db.Integer, nullable=False)
-    htp = db.Column(db.Integer, nullable=False)
-    descripcion = db.Column(db.Text, nullable=False)
-    fecha_ultima_correcion = db.Column(Date, nullable=True)  # nullable=True para permitir opcionallidad
-    archivo_word = db.Column(db.String(300), nullable=True)  # ruta/nombre archivo
-    hash_archivo = db.Column(db.String(64), nullable=True)  # SHA256 hash
+    semestre = db.Column(db.String(20), nullable=False)
+    coordinador_asignatura_unidad = db.Column(db.String(100), nullable=True)
+    lapso_academico = db.Column(db.String(50), nullable=True)
+    prelacion = db.Column(db.String(100), nullable=True)
+    modalidad = db.Column(db.String(50), nullable=True)
+    docentes = db.Column(db.Text, nullable=True)
+    unidad_credito = db.Column(db.Integer, nullable=True)
+    credito_academico = db.Column(db.Integer, nullable=True)
+    ht = db.Column(db.Integer, nullable=True)
+    hp = db.Column(db.Integer, nullable=True)
+    htp = db.Column(db.Integer, nullable=True)
+    descripcion = db.Column(db.Text, nullable=True)
+    fecha_ultima_correcion = db.Column(db.Date, nullable=True)
+    estado_actual = db.Column(db.String(30), default='En Revisión', nullable=False)
+    archivo_word = db.Column(db.String(300), nullable=True)
+    hash_archivo = db.Column(db.String(64), nullable=True)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+    
     docente_id = db.Column(db.Integer, db.ForeignKey('docentes.id'), nullable=True)
     docente = db.relationship('Docente', back_populates='programas')
+    versiones = db.relationship('ProgramaVersion', backref='programa', lazy=True, cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('idx_busqueda', 'semestre', 'area_curricular', 'eje_curricular'),
     )
 
     def __repr__(self):
-        return (f"<Programa {self.nombre} (id={self.id}), area_curricular='{self.area_curricular}', "
-                f"eje_curricular='{self.eje_curricular}', fecha_ultima_correcion={self.fecha_ultima_correcion}, docente_id={self.docente_id}>")
+        return f"<Programa {self.nombre} (id={self.id})>"
 
-# =================== FUNCIONES AUXILIARES FORMULARIO ===================
+class ProgramaVersion(db.Model):
+    __tablename__ = 'programa_versiones'
+    id = db.Column(db.Integer, primary_key=True)
+    programa_id = db.Column(db.Integer, db.ForeignKey('programas.id'), nullable=False)
+    version_numero = db.Column(db.Integer, nullable=False)
+    nombre_archivo_real = db.Column(db.String(255), nullable=False)
+    archivo_binario = db.Column(db.LargeBinary(length=16777215), nullable=False)
+    enviado_por = db.Column(db.String(20), nullable=False)
+    observaciones = db.Column(db.Text, nullable=True)
+    fecha_subida = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ==========================================
+# HACIA ABAJO SIGUE TU CÓDIGO NORMAL:
+# obtener_docentes(), ProgramaForm, rutas (@app.route), etc.
+# ==========================================
+
+# =================== FUNCIONES AUXILIARES ===================
 
 def obtener_docentes():
     return Docente.query.all()
@@ -96,17 +191,16 @@ def obtener_docentes():
 
 class ProgramaForm(FlaskForm):
     nombre = StringField('Nombre', validators=[DataRequired(), Length(max=200)])
-    asignatura_unidad_Curricular = StringField('Asignatura Unidad Curricular', validators=[DataRequired(), Length(max=100)])
+    asignatura_unidad_Curricular = StringField('Asignatura Unidad Curricular', validators=[DataRequired(), Length(max=150)])
     area_curricular = StringField('Area Curricular', validators=[DataRequired(), Length(max=100)])
     eje_curricular = StringField('Eje Curricular', validators=[DataRequired(), Length(max=100)])
-    semestre = IntegerField('Semestre', validators=[DataRequired(), NumberRange(min=1, max=12)])
+    semestre = StringField('Semestre / Lapso', validators=[DataRequired(), Length(max=20)]) 
     codigo = StringField('Codigo', validators=[DataRequired(), Length(max=20)])
     coordinador_asignatura_unidad = StringField('Coordinador', validators=[DataRequired(), Length(max=100)])
     lapso_academico = StringField('Lapso Academico', validators=[DataRequired(), Length(max=50)])
-    prelacion = StringField('Prelacion', validators=[Optional(), Length(max=50)])
+    prelacion = StringField('Prelacion', validators=[Optional(), Length(max=100)])
     modalidad = StringField('Modalidad', validators=[DataRequired(), Length(max=50)])
     
-    # REEMPLAZADO: Ahora es un menú desplegable mapeado a los datos maestros de la BD
     docente = QuerySelectField(
         'Docente Responsable',
         query_factory=obtener_docentes,
@@ -117,49 +211,25 @@ class ProgramaForm(FlaskForm):
     
     unidad_credito = IntegerField('Unidad de Credito', validators=[DataRequired(), NumberRange(min=1, max=10)])
     credito_academico = IntegerField('Credito Academico', validators=[DataRequired(), NumberRange(min=1, max=10)])
-    ht = IntegerField('HT', validators=[DataRequired(), NumberRange(min=1)])
-    hp = IntegerField('HP', validators=[DataRequired(), NumberRange(min=1)])
-    htp = IntegerField('HTP', validators=[DataRequired(), NumberRange(min=1)])
+    ht = IntegerField('HT', validators=[DataRequired(), NumberRange(min=0)])
+    hp = IntegerField('HP', validators=[DataRequired(), NumberRange(min=0)])
+    htp = IntegerField('HTP', validators=[DataRequired(), NumberRange(min=0)])
     descripcion = TextAreaField('Descripcion', validators=[DataRequired()])
     fecha_ultima_correcion = DateField('Fecha Ultima Correccion', validators=[Optional()])
     archivo_word = FileField('Documento Word', validators=[
-        FileAllowed(['doc', 'docx'], 'Solo archivos Word (.doc, .docx)')
+        FileAllowed(['doc', 'docx', 'pdf'], 'Solo archivos Word o PDF')
     ])
     submit = SubmitField('Guardar')
 
-# =================== FUNCIONES AUXILIARES ARCHIVOS ===================
-
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def procesar_word(file_storage, programa_id):
-    try:
-        filename_base = f"programa_{programa_id}"
-        ext = file_storage.filename.rsplit('.', 1)[1].lower()
-
-        # Guardar archivo temporalmente para obtener hash
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_{programa_id}.{ext}")
-        file_storage.save(temp_path)
-
-        with open(temp_path, "rb") as f:
-            file_hash = hashlib.sha256(f.read()).hexdigest()
-
-        filename_final = secure_filename(f"{filename_base}_{file_hash[:8]}.{ext}")
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename_final)
-
-        os.rename(temp_path, save_path)
-
-        return {'ruta_archivo': filename_final, 'hash': file_hash}
-    except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise e
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'doc', 'docx', 'pdf'}
 
 # =================== RUTAS ===================
 
 @app.route('/')
 def index():
-    programas = Programa.query.all()
+    # Con joinedload traemos los programas junto con sus versiones en una sola consulta SQL eficiente
+    programas = Programa.query.options(joinedload(Programa.versiones)).all()
     return render_template('index.html', programas=programas)
 
 @app.route('/agregar', methods=['GET', 'POST'])
@@ -178,35 +248,52 @@ def agregar():
                 lapso_academico=form.lapso_academico.data,
                 prelacion=form.prelacion.data,
                 modalidad=form.modalidad.data,
-                docentes="",  # Campo de texto plano por defecto vacío
-                docente=form.docente.data,  # Asignación del objeto Docente mediante la relación formal
+                docentes="",  
+                docente=form.docente.data,  
                 unidad_credito=form.unidad_credito.data,
                 credito_academico=form.credito_academico.data,
                 ht=form.ht.data,
                 hp=form.hp.data,
                 htp=form.htp.data,
                 descripcion=form.descripcion.data,
-                fecha_ultima_correcion=form.fecha_ultima_correcion.data
+                fecha_ultima_correcion=form.fecha_ultima_correcion.data,
+                estado_actual='En Revisión'
             )
+            
             db.session.add(nuevo_programa)
-            db.session.flush()  # Obtener ID único antes del commit para procesar el Word
+            db.session.flush()
 
             file = form.archivo_word.data
             if file and allowed_file(file.filename):
-                datos_word = procesar_word(file, nuevo_programa.id)
-                nuevo_programa.archivo_word = datos_word['ruta_archivo']
-                nuevo_programa.hash_archivo = datos_word['hash']
+                nombre_original = secure_filename(file.filename)
+                file.stream.seek(0)
+                bytes_archivo = file.stream.read()
+                hash_sha256 = hashlib.sha256(bytes_archivo).hexdigest()
+                
+                nueva_version = ProgramaVersion(
+                    programa_id=nuevo_programa.id,
+                    version_numero=1,
+                    nombre_archivo_real=nombre_original,
+                    archivo_binario=bytes_archivo,
+                    enviado_por='Profesor',
+                    observaciones="Carga inicial del programa académico."
+                )
+                db.session.add(nueva_version)
+                
+                nuevo_programa.archivo_word = nombre_original
+                nuevo_programa.hash_archivo = hash_sha256
+                
             elif file:
-                flash('Archivo no permitido. Solo .doc y .docx', 'danger')
+                flash('Archivo no permitido. Solo .doc, .docx y .pdf', 'danger')
                 return render_template('agregar.html', form=form)
 
             db.session.commit()
-            flash("Programa agregado exitosamente.", "success")
+            flash("Programa académico y archivo registrados exitosamente.", "success")
             return redirect(url_for('index'))
 
         except IntegrityError as e:
             db.session.rollback()
-            flash(f"Error al agregar el programa: {str(e)}", "danger")
+            flash(f"Error de integridad (Código ya registrado): {str(e)}", "danger")
         except Exception as e:
             db.session.rollback()
             flash(f"Error inesperado: {str(e)}", "danger")
@@ -219,61 +306,97 @@ def editar(id):
     form = ProgramaForm(obj=programa)
     if form.validate_on_submit():
         try:
+            # 1. Guardamos los cambios de los campos de texto
             form.populate_obj(programa)
-            
-            # Asegurar correspondencia del campo relacional mapeado
             programa.docente = form.docente.data
 
-            archivo = request.files.get('archivo_word')
-            if archivo and archivo.filename:
-                if allowed_file(archivo.filename):
-                    datos_word = procesar_word(archivo, programa.id)
-                    programa.archivo_word = datos_word['ruta_archivo']
-                    programa.hash_archivo = datos_word['hash']
+            # 2. Extrayemos el archivo directamente del objeto del formulario
+            file = form.archivo_word.data
+            
+            # Verificación blindada de tipos y existencia
+            if file and hasattr(file, 'filename') and file.filename != '':
+                if allowed_file(file.filename):
+                    nombre_original = secure_filename(file.filename)
+                    file.stream.seek(0)
+                    bytes_archivo = file.stream.read()
+                    hash_sha256 = hashlib.sha256(bytes_archivo).hexdigest()
+                    
+                    # Calcular el número de la siguiente versión
+                    num_versiones = ProgramaVersion.query.filter_by(programa_id=programa.id).count()
+                    nueva_version_num = num_versiones + 1
+                    
+                    nueva_version = ProgramaVersion(
+                        programa_id=programa.id,
+                        version_numero=nueva_version_num,
+                        nombre_archivo_real=nombre_original,
+                        archivo_binario=bytes_archivo,
+                        enviado_por='Profesor',
+                        observaciones=request.form.get('observaciones', 'Nueva versión cargada desde edición.')
+                    )
+                    db.session.add(nueva_version)
+                    
+                    # Actualizamos los metadatos en el registro principal
+                    programa.archivo_word = nombre_original
+                    programa.hash_archivo = hash_sha256
+                    programa.estado_actual = 'Reenviado'
                 else:
-                    flash('Archivo no permitido. Solo .doc y .docx', 'danger')
+                    flash('Archivo no permitido. Solo .doc, .docx y .pdf', 'danger')
                     return render_template('editar.html', form=form, programa=programa)
 
             db.session.commit()
-            flash("Programa actualizado correctamente.", "success")
+            flash("Programa académico actualizado correctamente.", "success")
             return redirect(url_for('index'))
 
         except IntegrityError as e:
             db.session.rollback()
-            flash(f"Error al actualizar el programa: {str(e)}", "danger")
+            flash(f"Error de integridad al actualizar: {str(e)}", "danger")
         except Exception as e:
             db.session.rollback()
             flash(f"Error inesperado: {str(e)}", "danger")
 
     return render_template('editar.html', form=form, programa=programa)
 
-@app.route('/eliminar/<int:id>', methods=['POST'])
+@app.route('/eliminar/<int:id>', methods=['POST', 'GET'])
 def eliminar(id):
     programa = Programa.query.get_or_404(id)
     try:
-        if programa.archivo_word:
-            archivo_path = os.path.join(app.config['UPLOAD_FOLDER'], programa.archivo_word)
-            if os.path.exists(archivo_path):
-                os.remove(archivo_path)
-
         db.session.delete(programa)
         db.session.commit()
-        flash("Programa eliminado correctamente.", "success")
+        flash("Programa y todo su historial de versiones eliminados de MySQL.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error al eliminar el programa: {str(e)}", "danger")
     return redirect(url_for('index'))
 
+@app.route('/descargar/<filename>')
+def descargar_archivo(filename):
+    try:
+        # Buscamos directamente el archivo por su nombre real en el historial de versiones
+        version_archivo = ProgramaVersion.query.filter_by(nombre_archivo_real=filename).first_or_404()
+            
+        if not version_archivo or not version_archivo.archivo_binario:
+            flash("El archivo solicitado no se encuentra en el repositorio de la base de datos.", "danger")
+            return redirect(url_for('index'))
+            
+        # Retornamos los bytes exactos de la versión seleccionada (sea V1, V2 o V3)
+        return Response(
+            version_archivo.archivo_binario,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={version_archivo.nombre_archivo_real}"}
+        )
+    except Exception as e:
+        flash(f"Error al descargar el documento: {str(e)}", "danger")
+        return redirect(url_for('index'))
+
 @app.route('/ver/<int:id>')
 def ver(id):
     programa = Programa.query.get_or_404(id)
-    return render_template('ver.html', programa=programa)
-
-@app.route('/uploads/<filename>')
-def descargar_archivo(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-
-# Manejo de errores HTTP
+    
+    # Buscamos las versiones de este programa ordenadas de la última (más reciente) a la primera
+    versiones = ProgramaVersion.query.filter_by(programa_id=id).order_by(ProgramaVersion.version_numero.desc()).all()
+    
+    # Enviamos tanto el programa como su historial de versiones a la plantilla
+    return render_template('ver.html', programa=programa, versiones=versiones)
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -286,4 +409,4 @@ def internal_error(e):
 if __name__ == "__main__":
     with app.app_context():        
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5001) 
