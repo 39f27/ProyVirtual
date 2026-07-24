@@ -7,7 +7,7 @@ from flask import Flask, flash, render_template, request, redirect, url_for, Res
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
+from flask_wtf.file import FileField
 from werkzeug.utils import secure_filename
 from wtforms import StringField, IntegerField, TextAreaField, DateField, SubmitField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
@@ -216,13 +216,13 @@ class ProgramaForm(FlaskForm):
     htp = IntegerField('HTP', validators=[DataRequired(), NumberRange(min=0)])
     descripcion = TextAreaField('Descripcion', validators=[DataRequired()])
     fecha_ultima_correcion = DateField('Fecha Ultima Correccion', validators=[Optional()])
-    archivo_word = FileField('Documento Word', validators=[
-        FileAllowed(['doc', 'docx', 'pdf'], 'Solo archivos Word o PDF')
-    ])
+    archivo_word = FileField('Documento Word', validators=[Optional()])
     submit = SubmitField('Guardar')
 
+ALLOWED_EXTENSIONS = {'doc', 'docx', 'pdf'}
+
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'doc', 'docx', 'pdf'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # =================== RUTAS ===================
 
@@ -299,6 +299,34 @@ def agregar():
             flash(f"Error inesperado: {str(e)}", "danger")
 
     return render_template('agregar.html', form=form)
+
+
+@app.route('/agregar_docente', methods=['GET', 'POST'])
+def agregar_docente():
+    if request.method == 'POST':
+        # 1. Capturamos los datos directamente del formulario HTML
+        nombre = request.form.get('nombre')
+        email = request.form.get('correo')
+        
+        # Validamos rápidamente que al menos el nombre no venga vacío
+        if nombre:
+            # 2. Creamos el registro del docente
+            nuevo_docente = Docente(nombre=nombre, email=email)
+            
+            try:
+                db.session.add(nuevo_docente)
+                db.session.commit()
+                flash('Docente registrado con éxito', 'success')
+                return redirect(url_for('index'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error inesperado: {str(e)}', 'danger')
+        else:
+            flash('El nombre del docente es obligatorio', 'danger')
+            
+    return render_template('agregar_docente.html')
+
+
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
@@ -405,6 +433,7 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('500.html'), 500
+
 
 if __name__ == "__main__":
     with app.app_context():        
