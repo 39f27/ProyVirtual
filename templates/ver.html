@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>UCLA - Vista de Programa Analítico</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container my-5">
+      <div
+        class="row align-items-center border-bottom pb-3 mb-4 bg-white p-3 rounded shadow-sm"
+      >
+        <div class="col-md-8">
+          <h4 class="text-dark fw-bold mb-0">
+            UNIVERSIDAD CENTROCCIDENTAL "LISANDRO ALVARADO"
+          </h4>
+          <p class="text-muted mb-0">DEPARTAMENTO DE EVALUACIÓN CURRICULAR</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <span class="badge bg-secondary p-2"
+            >Código: {{ programa.codigo }}</span
+          >
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+          <h5 class="mb-0">
+            📖 Datos Identificatorios de la Unidad Curricular
+          </h5>
+        </div>
+        <div class="card-body">
+          <table class="table table-bordered mb-0">
+            <tbody>
+              <tr>
+                <th class="bg-light" style="width: 30%">Asignatura:</th>
+                <td><strong>{{ programa.nombre }}</strong></td>
+              </tr>
+              <tr>
+                <th class="bg-light">Área Curricular:</th>
+                <td>{{ programa.area_curricular }}</td>
+              </tr>
+              <tr>
+                <th class="bg-light">Eje Curricular:</th>
+                <td>{{ programa.eje_curricular }}</td>
+              </tr>
+              <tr>
+                <th class="bg-light">Semestre / Lapso:</th>
+                <td>{{ programa.semestre }}</td>
+              </tr>
+              <tr>
+                <th class="bg-light">Docente Responsable:</th>
+                <td>
+                  {{ programa.docente.nombre if programa.docente else 'No
+                  asignado' }}
+                </td>
+              </tr>
+              <tr>
+                <th class="bg-light">Estado en el Flujo:</th>
+                <td>
+                  <span class="badge bg-info text-dark"
+                    >{{ programa.estado_actual }}</span
+                  >
+                </td>
+              </tr>
+              <tr>
+                <th class="bg-light">Descripción / Sinopsis:</th>
+                <td>
+                  {{ programa.descripcion or 'Sin descripción registrada.' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+          ⬅️ Volver al Inicio
+        </a>
+        <button onclick="window.print();" class="btn btn-primary">
+          🖨️ Imprimir Ficha
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

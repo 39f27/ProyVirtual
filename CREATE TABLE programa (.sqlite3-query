@@ -1,0 +1,83 @@
+CREATE TABLE
+    programa (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        codigo TEXT NOT NULL UNIQUE,
+        asignatura_unidad_curricular TEXT NOT NULL,
+        area_curricular TEXT NOT NULL,
+        eje_curricular TEXT NOT NULL,
+        semestre INTEGER NOT NULL,
+        coordinador_asignatura_unidad TEXT NOT NULL,
+        lapso_academico TEXT NOT NULL,
+        prelacion TEXT NOT NULL,
+        modalidad TEXT NOT NULL,
+        docentes TEXT NOT NULL,
+        unidad_credito INTEGER NOT NULL,
+        credito_academico INTEGER NOT NULL,
+        ht INTEGER NOT NULL,
+        hp INTEGER NOT NULL,
+        htp INTEGER NOT NULL,
+        descripcion TEXT NOT NULL,
+        fecha_ultima_correcion TEXT NOT NULL,
+        archivo_word TEXT,
+        hash_archivo TEXT
+    );
+
+INSERT INTO
+    programa (
+        nombre,
+        codigo,
+        asignatura_unidad_curricular,
+        area_curricular,
+        eje_curricular,
+        semestre,
+        coordinador_asignatura_unidad,
+        lapso_academico,
+        prelacion,
+        modalidad,
+        docentes,
+        unidad_credito,
+        credito_academico,
+        ht,
+        hp,
+        htp,
+        descripcion,
+        fecha_ultima_correcion,
+        archivo_word,
+        hash_archivo
+    )
+VALUES
+    (
+        'Programación Básica',
+        'PRG101',
+        'Introducción a la Programación',
+        'Informática',
+        'Software',
+        1,
+        'Juan Perez',
+        '2025-1',
+        'Ninguna',
+        'Presencial',
+        'Juan Perez, Maria Lopez',
+        3,
+        4,
+        30,
+        20,
+        10,
+        'Curso introductorio de programación',
+        '2025-07-01',
+        NULL,
+        NULL
+    );
+
+SELECT
+    *
+FROM
+    programa;
+
+SELECT
+    sql
+FROM
+    sqlite_master
+WHERE
+    type = 'table';

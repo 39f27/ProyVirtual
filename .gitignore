@@ -1,0 +1,9 @@
+test/ 
+venv/ 
+__pycache__/ 
+.vscode/ 
+*.db 
+migrations/**/__pycache__/ 
+.env
+*.sql
+uploads/programas/
