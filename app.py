@@ -683,8 +683,8 @@ def agregar():
             db.session.add(nuevo_programa)
             db.session.flush()
 
-            file = form.archivo_word.data
-            if file and allowed_file(file.filename):
+            file = form.archivo_word.data or request.files.get('archivo_word')
+            if file and file.filename != '' and allowed_file(file.filename):
                 nombre_original = secure_filename(file.filename)
                 file.stream.seek(0)
                 bytes_archivo = file.stream.read()
@@ -768,6 +768,8 @@ def editar(id):
         cod_doc = (form.docente.data or '').strip()
         cod_car_mat = (request.form.get('cod_car_mat') or '').strip()
         cod_lap = (request.form.get('cod_lap') or '').strip()
+        estado_seleccionado = (request.form.get('estado_actual') or programa.estado_actual or 'En Revisión').strip()
+        observacion_rev = (request.form.get('observaciones_revision') or '').strip()
 
         if not cod_doc or not cod_car_mat or not cod_lap:
             flash('Debe seleccionar obligatoriamente un Docente, una Materia del Pensum y un Lapso Académico.', 'danger')
@@ -778,8 +780,9 @@ def editar(id):
                 carreras=carreras,
                 lapsos=lapsos,
                 decanatos=decanatos,
+                estado_seleccionado=estado_seleccionado,
+                observacion_rev=observacion_rev,
             )
-
         car_mat = db.session.get(CarreraMateriaM, cod_car_mat)
         if not car_mat:
             flash('La asignación carrera-materia-pensum seleccionada no es válida.', 'danger')
@@ -826,7 +829,8 @@ def editar(id):
             programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data
             programa.cod_doc = cod_doc
             programa.cod_lap = cod_lap
-
+            programa.estado_actual = estado_seleccionado
+               
             file = request.files.get('archivo_word')
             if file and file.filename != '' and allowed_file(file.filename):
                 nombre_original = secure_filename(file.filename)
@@ -852,7 +856,25 @@ def editar(id):
                 db.session.add(nueva_version)
                 programa.archivo_word = nombre_original
                 programa.hash_archivo = hash_sha256
-
+                
+            # Registra traza de revisión / devolución en revision_programa_m
+            obs_final = observacion_rev or (
+                "Devuelto al docente responsable para correcciones en el documento."
+                if estado_seleccionado == 'Devuelto al Profesor'
+                else (form.descripcion.data or '')[:200]
+            )
+            nueva_revision = RevisionProgramaM(
+                cod_pro=f"PROG-{programa.id}-V{datetime.now().strftime('%H%M%S')}",
+                cod_doc=cod_doc,
+                cod_car_mat=cod_car_mat,
+                fec_rev=date.today(),
+                est_rev=estado_seleccionado,
+                nom_arc=programa.archivo_word or 'Sin Archivo',
+                obs_rev=obs_final[:200],
+                cod_lap=cod_lap,
+            )
+            db.session.add(nueva_revision)
+            
             db.session.commit()
             flash("Programa académico actualizado exitosamente.", "success")
             return redirect(url_for('index'))

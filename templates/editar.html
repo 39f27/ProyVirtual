@@ -140,7 +140,30 @@
           {{ form.descripcion.label(class="form-label") }}
           <textarea class="form-control" id="descripcion" name="descripcion" rows="4" required>{{ form.descripcion.data or programa.descripcion }}</textarea>
         </div>
-
+        <h5 class="text-primary border-bottom pb-2 mb-3 mt-4">🔎 Revisión y Devolución al Profesor</h5>
+        <div class="row">
+          <div class="col-md-5 mb-3">
+            <label for="estado_actual" class="form-label"><strong>Estatus del Programa</strong></label>
+            <select name="estado_actual" id="estado_actual" class="form-select" required>
+              {% set estados = ['En Revisión', 'Devuelto al Profesor', 'Con Observaciones', 'Aprobado'] %}
+              {% for est in estados %}
+                <option value="{{ est }}" {% if (form.estado_actual.data if form.estado_actual is defined and form.estado_actual.data else programa.estado_actual) == est %}selected{% endif %}>
+                  {{ est }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-7 mb-3">
+            <label for="observaciones_revision" class="form-label"><strong>Observaciones sobre el Archivo Word / Correcciones</strong></label>
+            <textarea
+              class="form-control"
+              id="observaciones_revision"
+              name="observaciones_revision"
+              rows="2"
+              placeholder="Ej: Ajustar tablas de contenidos y formato de sílabo según plantilla UCLA..."
+            >{{ request.form.get('observaciones_revision', '') }}</textarea>
+          </div>
+        </div>
         <h5 class="text-primary border-bottom pb-2 mb-3 mt-4">💾 Repositorio Digital (Actualización opcional)</h5>
         <div class="card bg-light mb-3">
           <div class="card-body">
