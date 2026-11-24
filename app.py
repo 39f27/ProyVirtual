@@ -826,11 +826,15 @@ def editar(id):
             programa.hp = form.hp.data
             programa.htp = form.htp.data
             programa.descripcion = form.descripcion.data.strip()
-            programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data
             programa.cod_doc = cod_doc
             programa.cod_lap = cod_lap
             programa.estado_actual = estado_seleccionado
-               
+
+            if estado_seleccionado == 'Devuelto al Profesor':
+                programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data or date.today()
+            elif form.fecha_ultima_correcion.data:
+                programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data
+
             file = request.files.get('archivo_word')
             if file and file.filename != '' and allowed_file(file.filename):
                 nombre_original = secure_filename(file.filename)
@@ -856,25 +860,37 @@ def editar(id):
                 db.session.add(nueva_version)
                 programa.archivo_word = nombre_original
                 programa.hash_archivo = hash_sha256
-                
-            # Registra traza de revisión / devolución en revision_programa_m
+
+            # Actualiza o registra la traza vigente en revision_programa_m (clave: PROG-<id>)
             obs_final = observacion_rev or (
                 "Devuelto al docente responsable para correcciones en el documento."
                 if estado_seleccionado == 'Devuelto al Profesor'
-                else (form.descripcion.data or '')[:200]
+                else (form.descripcion.data or '')
             )
-            nueva_revision = RevisionProgramaM(
-                cod_pro=f"PROG-{programa.id}-V{datetime.now().strftime('%H%M%S')}",
-                cod_doc=cod_doc,
-                cod_car_mat=cod_car_mat,
-                fec_rev=date.today(),
-                est_rev=estado_seleccionado,
-                nom_arc=programa.archivo_word or 'Sin Archivo',
-                obs_rev=obs_final[:200],
-                cod_lap=cod_lap,
-            )
-            db.session.add(nueva_revision)
-            
+            codigo_revision = f"PROG-{programa.id}"
+            revision_existente = RevisionProgramaM.query.filter_by(cod_pro=codigo_revision).first()
+
+            if revision_existente:
+                revision_existente.cod_doc = cod_doc
+                revision_existente.cod_car_mat = cod_car_mat
+                revision_existente.fec_rev = date.today()
+                revision_existente.est_rev = estado_seleccionado
+                revision_existente.nom_arc = programa.archivo_word or 'Sin Archivo'
+                revision_existente.obs_rev = obs_final
+                revision_existente.cod_lap = cod_lap
+            else:
+                nueva_revision = RevisionProgramaM(
+                    cod_pro=codigo_revision,
+                    cod_doc=cod_doc,
+                    cod_car_mat=cod_car_mat,
+                    fec_rev=date.today(),
+                    est_rev=estado_seleccionado,
+                    nom_arc=programa.archivo_word or 'Sin Archivo',
+                    obs_rev=obs_final,
+                    cod_lap=cod_lap,
+                )
+                db.session.add(nueva_revision)
+
             db.session.commit()
             flash("Programa académico actualizado exitosamente.", "success")
             return redirect(url_for('index'))
@@ -894,7 +910,8 @@ def editar(id):
         carreras=carreras,
         lapsos=lapsos,
         decanatos=decanatos,
-    )
+    )    
+
 @app.route('/eliminar/<int:id>', methods=['POST', 'GET'])
 def eliminar(id):
     programa = Programa.query.get_or_404(id)
