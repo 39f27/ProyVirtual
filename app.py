@@ -1,53 +1,53 @@
-from datetime import datetime, date
-import csv
+import os
 import hashlib
-import io
-from flask import (
-    Flask,
-    Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    flash,
-    request,
-    jsonify,
-    make_response,
-)
+from datetime import datetime
+from sqlalchemy.orm import joinedload
+
+from flask import Flask, flash, render_template, request, redirect, url_for, Response
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from wtforms import StringField, TextAreaField, IntegerField, SubmitField, DateField, SelectField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional
-from sqlalchemy.orm import joinedload
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import or_
 from werkzeug.utils import secure_filename
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'clave_secreta_proyvirtual_ucla_2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:Botella.0101@localhost/programas_ucla'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
+from wtforms import StringField, IntegerField, TextAreaField, DateField, SubmitField
+from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms_alchemy import QuerySelectField
+from sqlalchemy import Date, Index
+from sqlalchemy.exc import IntegrityError
+from decouple import config
+from dotenv import load_dotenv
 
 # ==========================================
-# 1. MODELOS DE LA ARQUITECTURA MAESTRA UCLA (_t y _m)
+# 1. INICIALIZACIÓN DE LA APP Y CONFIGURACIÓN DE BD
+# ==========================================
+load_dotenv()
+
+app = Flask(__name__)
+
+# Configuración de la base de datos (se asume que usas variables de entorno o decouple)
+app.config['SECRET_KEY'] = config('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = config('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+# ==========================================
+# 2. MODELOS DEL DIAGRAMA ER INSTITUCIONAL (UCLA)
 # ==========================================
 
 class UsuarioT(db.Model):
     __tablename__ = 'usuario_t'
     cod_usu = db.Column(db.String(50), primary_key=True)
     nom_usu = db.Column(db.String(100), nullable=True)
-    cla_usu = db.Column(db.String(100), nullable=True)
+    cla_usu = db.Column(db.String(100), nullable=True)  # Hash de contraseña
     rol_usu = db.Column(db.String(50), nullable=True)
-
 
 class DecanatoT(db.Model):
     __tablename__ = 'decanato_t'
     cod_dec = db.Column(db.String(50), primary_key=True)
     nom_dec = db.Column(db.String(150), nullable=True)
     carreras = db.relationship('CarreraT', backref='decanato', lazy=True)
-
 
 class CarreraT(db.Model):
     __tablename__ = 'carrera_t'
@@ -56,7 +56,6 @@ class CarreraT(db.Model):
     cod_dec = db.Column(db.String(50), db.ForeignKey('decanato_t.cod_dec'), nullable=True)
     carreras_materias = db.relationship('CarreraMateriaM', backref='carrera', lazy=True)
 
-
 class MateriasProgramasT(db.Model):
     __tablename__ = 'materias_programas_t'
     cod_mat = db.Column(db.String(50), primary_key=True)
@@ -64,24 +63,18 @@ class MateriasProgramasT(db.Model):
     materias_carreras = db.relationship('CarreraMateriaM', backref='materia', lazy=True)
     prelaciones = db.relationship('PrelacionM', backref='materia', lazy=True)
 
-
 class CarreraMateriaM(db.Model):
     __tablename__ = 'carrera_materia_m'
     cod_car_mat = db.Column(db.String(50), primary_key=True)
     cod_car = db.Column(db.String(50), db.ForeignKey('carrera_t.cod_car'), nullable=True)
     cod_mat = db.Column(db.String(50), db.ForeignKey('materias_programas_t.cod_mat'), nullable=True)
-    pensum = db.Column(db.String(50), nullable=False, default='Pensum 2022')
-    semestre = db.Column(db.String(20), nullable=True)
     revisiones = db.relationship('RevisionProgramaM', backref='carrera_materia', lazy=True)
-    programas = db.relationship('Programa', backref='carrera_materia_rel', lazy=True)
-
 
 class PrelacionM(db.Model):
     __tablename__ = 'prelacion_m'
     cod_pre = db.Column(db.String(50), primary_key=True)
     cod_mat = db.Column(db.String(50), db.ForeignKey('materias_programas_t.cod_mat'), nullable=True)
     cod_mat_pre = db.Column(db.String(50), nullable=True)
-
 
 class LapsoAcademicoT(db.Model):
     __tablename__ = 'lapso_academico_t'
@@ -91,8 +84,6 @@ class LapsoAcademicoT(db.Model):
     fec_fin = db.Column(db.Date, nullable=True)
     est_act = db.Column(db.String(1), nullable=True)
     revisiones = db.relationship('RevisionProgramaM', backref='lapso_academico', lazy=True)
-    programas = db.relationship('Programa', backref='lapso_academico_rel', lazy=True)
-
 
 class DocenteT(db.Model):
     __tablename__ = 'docente_t'
@@ -106,8 +97,6 @@ class DocenteT(db.Model):
     nac_doc = db.Column(db.String(50), nullable=True)
     sex_doc = db.Column(db.String(20), nullable=True)
     revisiones = db.relationship('RevisionProgramaM', backref='docente_t', lazy=True)
-    programas = db.relationship('Programa', backref='docente_t_rel', lazy=True)
-
 
 class RevisionProgramaM(db.Model):
     __tablename__ = 'revision_programa_m'
@@ -120,14 +109,14 @@ class RevisionProgramaM(db.Model):
     obs_rev = db.Column(db.Text, nullable=True)
     cod_lap = db.Column(db.String(50), db.ForeignKey('lapso_academico_t.cod_lap'), nullable=True)
 
-
-_forzar_mapeo_ucla = [
-    UsuarioT, DecanatoT, CarreraT, MateriasProgramasT,
-    CarreraMateriaM, PrelacionM, LapsoAcademicoT, DocenteT, RevisionProgramaM
-]
+# ==========================================
+# 3. TRUCO DE CONTEXTO ABSOLUTO PARA MIGRACIONES
+# ==========================================
+# Al referenciar explícitamente las clases aquí, garantizamos que Alembic las procese obligatoriamente.
+_forzar_mapeo_ucla = [UsuarioT, DecanatoT, CarreraT, MateriasProgramasT, CarreraMateriaM, PrelacionM, LapsoAcademicoT, DocenteT, RevisionProgramaM]
 
 # ==========================================
-# 2. MODELOS OPERATIVOS Y VERSIONAMIENTO
+# 4. MODELOS OPERATIVOS DE SISTEMA
 # ==========================================
 
 class Docente(db.Model):
@@ -135,7 +124,10 @@ class Docente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=True)
+    programas = db.relationship('Programa', back_populates='docente')
 
+    def __repr__(self):
+        return f"<Docente {self.nombre} (id={self.id})>"
 
 class Programa(db.Model):
     __tablename__ = 'programas'
@@ -162,29 +154,17 @@ class Programa(db.Model):
     archivo_word = db.Column(db.String(300), nullable=True)
     hash_archivo = db.Column(db.String(64), nullable=True)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
-
-    cod_doc = db.Column(db.String(50), db.ForeignKey('docente_t.cod_doc'), nullable=True)
-    docente_maestro = db.relationship(
-        'DocenteT',
-        foreign_keys=[cod_doc],
-        overlaps="docente_t_rel,programas",
-    )
-
-    cod_car_mat = db.Column(db.String(50), db.ForeignKey('carrera_materia_m.cod_car_mat'), nullable=True)
-    carrera_materia = db.relationship(
-        'CarreraMateriaM',
-        foreign_keys=[cod_car_mat],
-        overlaps="carrera_materia_rel,programas",
-    )
-
-    cod_lap = db.Column(db.String(50), db.ForeignKey('lapso_academico_t.cod_lap'), nullable=True)
-    lapso_maestro = db.relationship(
-        'LapsoAcademicoT',
-        foreign_keys=[cod_lap],
-        overlaps="lapso_academico_rel,programas",
-    )
+    
+    docente_id = db.Column(db.Integer, db.ForeignKey('docentes.id'), nullable=True)
+    docente = db.relationship('Docente', back_populates='programas')
     versiones = db.relationship('ProgramaVersion', backref='programa', lazy=True, cascade="all, delete-orphan")
 
+    __table_args__ = (
+        Index('idx_busqueda', 'semestre', 'area_curricular', 'eje_curricular'),
+    )
+
+    def __repr__(self):
+        return f"<Programa {self.nombre} (id={self.id})>"
 
 class ProgramaVersion(db.Model):
     __tablename__ = 'programa_versiones'
@@ -198,719 +178,211 @@ class ProgramaVersion(db.Model):
     fecha_subida = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ==========================================
-# 3. FORMULARIOS WTFORMS Y UTILIDADES
+# HACIA ABAJO SIGUE TU CÓDIGO NORMAL:
+# obtener_docentes(), ProgramaForm, rutas (@app.route), etc.
 # ==========================================
 
-class ProgramaForm(FlaskForm):
-    nombre = StringField('Nombre del Programa', validators=[DataRequired(), Length(max=200)])
-    asignatura_unidad_Curricular = StringField('Asignatura / Unidad Curricular', validators=[Optional(), Length(max=150)])
-    semestre = StringField('Semestre', validators=[Optional(), Length(max=20)])
-    lapso_academico = StringField('Lapso Académico', validators=[Optional(), Length(max=50)])
-    area_curricular = StringField('Área Curricular', validators=[DataRequired(), Length(max=100)])
-    eje_curricular = StringField('Eje Curricular', validators=[DataRequired(), Length(max=100)])
-    docente = SelectField('Docente', coerce=str, validators=[DataRequired()])
-    codigo = StringField('Código', validators=[DataRequired(), Length(max=20)])
-    coordinador_asignatura_unidad = StringField('Coordinador', validators=[DataRequired(), Length(max=100)])
-    modalidad = StringField('Modalidad', validators=[DataRequired(), Length(max=50)])
-    prelacion = StringField('Prelación', validators=[Optional(), Length(max=100)])
+# =================== FUNCIONES AUXILIARES ===================
 
-    unidad_credito = IntegerField('Unidad de Crédito', validators=[DataRequired(), NumberRange(min=1, max=10)])
-    credito_academico = IntegerField('Crédito Académico', validators=[DataRequired(), NumberRange(min=1, max=10)])
+def obtener_docentes():
+    return Docente.query.all()
+
+# =================== FORMULARIO ===================
+
+class ProgramaForm(FlaskForm):
+    nombre = StringField('Nombre', validators=[DataRequired(), Length(max=200)])
+    asignatura_unidad_Curricular = StringField('Asignatura Unidad Curricular', validators=[DataRequired(), Length(max=150)])
+    area_curricular = StringField('Area Curricular', validators=[DataRequired(), Length(max=100)])
+    eje_curricular = StringField('Eje Curricular', validators=[DataRequired(), Length(max=100)])
+    semestre = StringField('Semestre / Lapso', validators=[DataRequired(), Length(max=20)]) 
+    codigo = StringField('Codigo', validators=[DataRequired(), Length(max=20)])
+    coordinador_asignatura_unidad = StringField('Coordinador', validators=[DataRequired(), Length(max=100)])
+    lapso_academico = StringField('Lapso Academico', validators=[DataRequired(), Length(max=50)])
+    prelacion = StringField('Prelacion', validators=[Optional(), Length(max=100)])
+    modalidad = StringField('Modalidad', validators=[DataRequired(), Length(max=50)])
+    
+    docente = QuerySelectField(
+        'Docente Responsable',
+        query_factory=obtener_docentes,
+        allow_blank=True,
+        blank_text='-- Seleccione un Docente Maestro --',
+        get_label='nombre'
+    )
+    
+    unidad_credito = IntegerField('Unidad de Credito', validators=[DataRequired(), NumberRange(min=1, max=10)])
+    credito_academico = IntegerField('Credito Academico', validators=[DataRequired(), NumberRange(min=1, max=10)])
     ht = IntegerField('HT', validators=[DataRequired(), NumberRange(min=0)])
     hp = IntegerField('HP', validators=[DataRequired(), NumberRange(min=0)])
     htp = IntegerField('HTP', validators=[DataRequired(), NumberRange(min=0)])
-    descripcion = TextAreaField('Descripción', validators=[DataRequired()])
-    fecha_ultima_correcion = DateField('Fecha Última Corrección', validators=[Optional()])
+    descripcion = TextAreaField('Descripcion', validators=[DataRequired()])
+    fecha_ultima_correcion = DateField('Fecha Ultima Correccion', validators=[Optional()])
     archivo_word = FileField('Documento Word', validators=[Optional()])
-    submit = SubmitField('Guardar Programa')
-
+    submit = SubmitField('Guardar')
 
 ALLOWED_EXTENSIONS = {'doc', 'docx', 'pdf'}
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-def mensaje_error_integridad(err):
-    detalle = str(getattr(err, 'orig', err)).lower()
-    if 'duplicate entry' in detalle:
-        return "Ya existe un registro con ese código o combinación única en la base de datos.", "warning"
-    if 'foreign key constraint fails' in detalle:
-        return "Error de integridad referencial: verifique carrera, materia, docente o lapso.", "danger"
-    return "No se pudo guardar por una restricción de integridad en la base de datos.", "danger"
-
-
-def construir_query_programas():
-    """Construye la consulta base de programas con los filtros de la URL."""
-    q_docente = request.args.get('docente', '').strip()
-    q_carrera = request.args.get('carrera', '').strip()
-    q_materia = request.args.get('materia', '').strip()
-    q_estatus = request.args.get('estatus', '').strip()
-    q_desde = request.args.get('desde', '').strip()
-    q_hasta = request.args.get('hasta', '').strip()
-
-    query = Programa.query.options(
-        joinedload(Programa.versiones),
-        joinedload(Programa.docente_maestro),
-        joinedload(Programa.carrera_materia).joinedload(CarreraMateriaM.materia),
-        joinedload(Programa.carrera_materia).joinedload(CarreraMateriaM.carrera)
-    )
-
-    if q_docente:
-        patron_doc = f"%{q_docente}%"
-        query = query.outerjoin(Programa.docente_maestro).filter(
-            or_(
-                DocenteT.nom_doc.ilike(patron_doc),
-                DocenteT.ape_doc.ilike(patron_doc),
-                DocenteT.ced_doc.ilike(patron_doc),
-                DocenteT.cod_doc.ilike(patron_doc),
-            )
-        )
-
-    if q_carrera or q_materia:
-        query = query.outerjoin(Programa.carrera_materia)
-        if q_carrera:
-            query = query.filter(CarreraMateriaM.cod_car == q_carrera)
-        if q_materia:
-            patron_mat = f"%{q_materia}%"
-            query = query.outerjoin(
-                MateriasProgramasT,
-                CarreraMateriaM.cod_mat == MateriasProgramasT.cod_mat
-            ).filter(
-                or_(
-                    Programa.codigo.ilike(patron_mat),
-                    Programa.asignatura_unidad_Curricular.ilike(patron_mat),
-                    CarreraMateriaM.cod_mat.ilike(patron_mat),
-                    MateriasProgramasT.nom_mat.ilike(patron_mat),
-                )
-            )
-
-    if q_estatus:
-        query = query.filter(Programa.estado_actual == q_estatus)
-
-    if q_desde:
-        try:
-            fecha_desde = datetime.strptime(q_desde, "%Y-%m-%d")
-            query = query.filter(Programa.fecha_creacion >= fecha_desde)
-        except ValueError:
-            flash("Formato de fecha 'Desde' no válido. Use AAAA-MM-DD.", "warning")
-
-    if q_hasta:
-        try:
-            fecha_hasta = datetime.strptime(q_hasta, "%Y-%m-%d")
-            fin_de_dia = datetime.combine(fecha_hasta.date(), datetime.max.time())
-            query = query.filter(Programa.fecha_creacion <= fin_de_dia)
-        except ValueError:
-            flash("Formato de fecha 'Hasta' no válido. Use AAAA-MM-DD.", "warning")
-
-    filtros_activos = {
-        "docente": q_docente,
-        "carrera": q_carrera,
-        "materia": q_materia,
-        "estatus": q_estatus,
-        "desde": q_desde,
-        "hasta": q_hasta,
-    }
-    return query.order_by(Programa.fecha_creacion.desc()), filtros_activos
-
-# ==========================================
-# 4. BLUEPRINT API Y RUTAS DE CONSULTA DINÁMICA
-# ==========================================
-
-api_bp = Blueprint("api_proyvirtual", __name__, url_prefix="/api")
-
-
-@api_bp.get("/docentes/buscar")
-def api_buscar_docentes():
-    termino = request.args.get("q", "", type=str).strip()
-    if len(termino) < 2:
-        return jsonify([])
-
-    patron = f"%{termino}%"
-    docentes = (
-        DocenteT.query.filter(
-            or_(
-                DocenteT.cod_doc.ilike(patron),
-                DocenteT.ced_doc.ilike(patron),
-                DocenteT.nom_doc.ilike(patron),
-                DocenteT.ape_doc.ilike(patron),
-            )
-        )
-        .order_by(DocenteT.ape_doc.asc(), DocenteT.nom_doc.asc())
-        .limit(20)
-        .all()
-    )
-
-    resultados = [
-        {
-            "cod_doc": d.cod_doc,
-            "cedula": d.ced_doc or "",
-            "nombre_completo": f"{d.nom_doc or ''} {d.ape_doc or ''}".strip(),
-            "etiqueta": f"{d.ced_doc or d.cod_doc} - {d.nom_doc or ''} {d.ape_doc or ''}".strip(),
-        }
-        for d in docentes
-    ]
-    return jsonify(resultados)
-
-
-@api_bp.get("/materias/filtrar")
-def api_filtrar_materias():
-    cod_car = request.args.get("cod_car", "", type=str).strip()
-    pensum = request.args.get("pensum", "", type=str).strip()
-    termino = request.args.get("q", "", type=str).strip()
-
-    if not cod_car and len(termino) < 2:
-        return jsonify([])
-
-    consulta = (
-        db.session.query(
-            CarreraMateriaM.cod_car_mat,
-            CarreraMateriaM.cod_car,
-            CarreraMateriaM.cod_mat,
-            CarreraMateriaM.pensum,
-            CarreraMateriaM.semestre,
-            MateriasProgramasT.nom_mat,
-        )
-        .join(
-            MateriasProgramasT,
-            CarreraMateriaM.cod_mat == MateriasProgramasT.cod_mat,
-        )
-    )
-
-    if cod_car:
-        consulta = consulta.filter(CarreraMateriaM.cod_car == cod_car)
-    if pensum:
-        consulta = consulta.filter(CarreraMateriaM.pensum == pensum)
-    if termino:
-        patron = f"%{termino}%"
-        consulta = consulta.filter(
-            or_(
-                CarreraMateriaM.cod_mat.ilike(patron),
-                CarreraMateriaM.cod_car_mat.ilike(patron),
-                MateriasProgramasT.nom_mat.ilike(patron),
-            )
-        )
-
-    filas = (
-        consulta.order_by(
-            CarreraMateriaM.semestre.asc(),
-            MateriasProgramasT.nom_mat.asc(),
-        )
-        .limit(50)
-        .all()
-    )
-
-    resultados = [
-        {
-            "cod_car_mat": f.cod_car_mat,
-            "cod_car": f.cod_car,
-            "cod_mat": f.cod_mat,
-            "nom_mat": f.nom_mat or "",
-            "pensum": f.pensum or "",
-            "semestre": f.semestre or "",
-            "etiqueta": f"[{f.cod_mat}] {f.nom_mat} ({f.pensum} - Sem. {f.semestre or 'N/A'})",
-        }
-        for f in filas
-    ]
-    return jsonify(resultados)
-
-
-@api_bp.get("/carreras/<cod_dec>")
-def api_carreras_por_decanato(cod_dec):
-    carreras = (
-        CarreraT.query.filter_by(cod_dec=cod_dec)
-        .order_by(CarreraT.nom_car.asc())
-        .all()
-    )
-    return jsonify([
-        {"cod_car": c.cod_car, "nom_car": c.nom_car}
-        for c in carreras
-    ])
-
-@api_bp.get("/pensums/<cod_car>")
-def api_pensums(cod_car):
-    pensums = db.session.query(CarreraMateriaM.pensum).filter_by(cod_car=cod_car).distinct().all()
-    return jsonify([p[0] for p in pensums])
-
-
-@api_bp.get("/materias-por-carrera/<cod_car>")
-def api_materias_por_carrera(cod_car):
-    filas = (
-        db.session.query(
-            CarreraMateriaM.cod_car_mat,
-            CarreraMateriaM.cod_mat,
-            CarreraMateriaM.pensum,
-            CarreraMateriaM.semestre,
-            MateriasProgramasT.nom_mat,
-        )
-        .join(
-            MateriasProgramasT,
-            CarreraMateriaM.cod_mat == MateriasProgramasT.cod_mat,
-        )
-        .filter(CarreraMateriaM.cod_car == cod_car)
-        .order_by(CarreraMateriaM.semestre.asc(), MateriasProgramasT.nom_mat.asc())
-        .all()
-    )
-    return jsonify([
-        {
-            "cod_car_mat": f.cod_car_mat,
-            "cod_mat": f.cod_mat,
-            "nom_mat": f.nom_mat or "",
-            "pensum": f.pensum or "",
-            "semestre": f.semestre or "",
-        }
-        for f in filas
-    ])
-    return jsonify(materias)
-
-
-app.register_blueprint(api_bp)
-
-# ==========================================
-# 5. RUTAS PRINCIPALES (PANEL, CRUD Y EXPORTACIÓN)
-# ==========================================
+# =================== RUTAS ===================
 
 @app.route('/')
 def index():
-    page = request.args.get('page', 1, type=int)
-    per_page = 15
-
-    query, filtros_activos = construir_query_programas()
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    programas = pagination.items
-    carreras = CarreraT.query.order_by(CarreraT.nom_car.asc()).all()
-
-    return render_template(
-        'index.html',
-        programas=programas,
-        pagination=pagination,
-        carreras=carreras,
-        filtros=filtros_activos,
-    )
-
-
-@app.route('/exportar/csv')
-def exportar_csv():
-    query, _ = construir_query_programas()
-    programas = query.all()
-
-    salida = io.StringIO()
-    escritor = csv.writer(salida, delimiter=';', quoting=csv.QUOTE_MINIMAL)
-
-    escritor.writerow([
-        "ID",
-        "Código",
-        "Nombre del Programa",
-        "Asignatura / Unidad Curricular",
-        "Carrera",
-        "Pensum",
-        "Semestre",
-        "Lapso",
-        "Docente Responsable",
-        "Estado Actual",
-        "U.C.",
-        "Créditos Acad.",
-        "H.T.",
-        "H.P.",
-        "H.T.P.",
-        "Archivo Adjunto",
-        "Fecha Creación"
-    ])
-
-    for p in programas:
-        docente_nombre = ""
-        if p.docente_maestro:
-            docente_nombre = f"{p.docente_maestro.nom_doc or ''} {p.docente_maestro.ape_doc or ''}".strip()
-
-        cod_car = p.carrera_materia.cod_car if p.carrera_materia else ""
-        pensum = p.carrera_materia.pensum if p.carrera_materia else ""
-        lapso = p.cod_lap or p.lapso_academico or ""
-        fecha_str = p.fecha_creacion.strftime("%Y-%m-%d %H:%M") if p.fecha_creacion else ""
-
-        escritor.writerow([
-            p.id,
-            p.codigo or "",
-            p.nombre or "",
-            p.asignatura_unidad_Curricular or "",
-            cod_car,
-            pensum,
-            p.semestre or "",
-            lapso,
-            docente_nombre,
-            p.estado_actual or "",
-            p.unidad_credito if p.unidad_credito is not None else "",
-            p.credito_academico if p.credito_academico is not None else "",
-            p.ht if p.ht is not None else "",
-            p.hp if p.hp is not None else "",
-            p.htp if p.htp is not None else "",
-            p.archivo_word or "",
-            fecha_str
-        ])
-
-    contenido_csv = salida.getvalue().encode("utf-8-sig")
-    nombre_archivo = f"programas_ucla_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
-
-    respuesta = make_response(contenido_csv)
-    respuesta.headers["Content-Type"] = "text/csv; charset=utf-8"
-    respuesta.headers["Content-Disposition"] = f"attachment; filename={nombre_archivo}"
-    return respuesta
-
-
-@app.route('/agregar_docente', methods=['POST'])
-def agregar_docente():
-    cod_doc = (request.form.get('cod_doc') or request.form.get('codigo') or '').strip()
-    ced_doc = (request.form.get('ced_doc') or request.form.get('cedula') or '').strip()
-    nom_doc = (request.form.get('nom_doc') or request.form.get('nombre') or '').strip()
-    ape_doc = (request.form.get('ape_doc') or request.form.get('apellido') or '').strip()
-    cor_doc = (request.form.get('cor_doc') or request.form.get('correo') or '').strip()
-
-    if not cod_doc and ced_doc:
-        cod_doc = ced_doc
-
-    if not cod_doc or not nom_doc:
-        flash("Debe indicar al menos el código/cédula y el nombre del docente.", "warning")
-        return redirect(url_for('index'))
-
-    try:
-        nuevo_docente = DocenteT(
-            cod_doc=cod_doc,
-            ced_doc=ced_doc or None,
-            nom_doc=nom_doc,
-            ape_doc=ape_doc or None,
-            cor_doc=cor_doc or None,
-        )
-        db.session.add(nuevo_docente)
-        db.session.commit()
-        flash("Docente registrado exitosamente en docente_t.", "success")
-    except IntegrityError as e:
-        db.session.rollback()
-        msg, categoria = mensaje_error_integridad(e)
-        flash(msg, categoria)
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error al registrar docente: {str(e)}", "danger")
-
-    return redirect(url_for('index'))
-
+    # Con joinedload traemos los programas junto con sus versiones en una sola consulta SQL eficiente
+    programas = Programa.query.options(joinedload(Programa.versiones)).all()
+    return render_template('index.html', programas=programas)
 
 @app.route('/agregar', methods=['GET', 'POST'])
 def agregar():
     form = ProgramaForm()
-
-    try:
-        form.docente.choices = [
-            (str(d.cod_doc).strip(), f"{(d.nom_doc or '').strip()} {(d.ape_doc or '').strip()}".strip())
-            for d in DocenteT.query.all()
-        ]
-    except Exception:
-        form.docente.choices = []
-
-    decanatos = DecanatoT.query.order_by(DecanatoT.nom_dec.asc()).all()
-    carreras = CarreraMateriaM.query.all()
-    lapsos = LapsoAcademicoT.query.all()
-    valid_cods = {val for val, _ in form.docente.choices}
-
-    if request.method == 'POST':
-        candidato = (request.form.get('cod_doc') or request.form.get('docente') or '').strip()
-        if candidato in valid_cods:
-            form.docente.data = candidato
-
     if form.validate_on_submit():
-        cod_doc = (form.docente.data or '').strip()
-        cod_car_mat = (request.form.get('cod_car_mat') or '').strip()
-        cod_lap = (request.form.get('cod_lap') or '').strip()
-
-        if not cod_doc or not cod_car_mat or not cod_lap:
-            flash('Debe seleccionar obligatoriamente un Docente, una Materia del Pensum y un Lapso Académico.', 'danger')
-            return render_template(
-                'agregar.html',
-                form=form,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-            )
-
-        car_mat = db.session.get(CarreraMateriaM, cod_car_mat)
-        if not car_mat:
-            flash('La asignación carrera-materia-pensum seleccionada no es válida.', 'danger')
-            return render_template(
-                'agregar.html',
-                form=form,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-            )
-
-        if not db.session.get(DocenteT, cod_doc):
-            flash('El docente seleccionado no existe en docente_t.', 'danger')
-            return render_template(
-                'agregar.html',
-                form=form,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-            )
-
-        materia_maestra = db.session.get(MateriasProgramasT, car_mat.cod_mat)
-        nombre_asignatura = materia_maestra.nom_mat if materia_maestra else "Asignatura Oficial UCLA"
-        semestre_asignado = car_mat.semestre or 'I'
-
         try:
             nuevo_programa = Programa(
-                nombre=form.nombre.data.strip(),
-                asignatura_unidad_Curricular=nombre_asignatura,
-                area_curricular=form.area_curricular.data.strip(),
-                eje_curricular=form.eje_curricular.data.strip(),
-                semestre=semestre_asignado,
-                codigo=form.codigo.data.strip(),
-                coordinador_asignatura_unidad=form.coordinador_asignatura_unidad.data.strip(),
-                lapso_academico=cod_lap,
-                prelacion=(form.prelacion.data or '').strip() or None,
-                modalidad=form.modalidad.data.strip(),
+                nombre=form.nombre.data,
+                asignatura_unidad_Curricular=form.asignatura_unidad_Curricular.data,
+                area_curricular=form.area_curricular.data,
+                eje_curricular=form.eje_curricular.data,
+                semestre=form.semestre.data,
+                codigo=form.codigo.data,
+                coordinador_asignatura_unidad=form.coordinador_asignatura_unidad.data,
+                lapso_academico=form.lapso_academico.data,
+                prelacion=form.prelacion.data,
+                modalidad=form.modalidad.data,
+                docentes="",  
+                docente=form.docente.data,  
                 unidad_credito=form.unidad_credito.data,
                 credito_academico=form.credito_academico.data,
                 ht=form.ht.data,
                 hp=form.hp.data,
                 htp=form.htp.data,
-                descripcion=form.descripcion.data.strip(),
+                descripcion=form.descripcion.data,
                 fecha_ultima_correcion=form.fecha_ultima_correcion.data,
-                estado_actual='En Revisión',
-                cod_doc=cod_doc,
-                cod_car_mat=cod_car_mat,
-                cod_lap=cod_lap,
+                estado_actual='En Revisión'
             )
+            
             db.session.add(nuevo_programa)
             db.session.flush()
 
-            file = form.archivo_word.data or request.files.get('archivo_word')
-            if file and file.filename != '' and allowed_file(file.filename):
+            file = form.archivo_word.data
+            if file and allowed_file(file.filename):
                 nombre_original = secure_filename(file.filename)
                 file.stream.seek(0)
                 bytes_archivo = file.stream.read()
                 hash_sha256 = hashlib.sha256(bytes_archivo).hexdigest()
-
+                
                 nueva_version = ProgramaVersion(
                     programa_id=nuevo_programa.id,
                     version_numero=1,
                     nombre_archivo_real=nombre_original,
                     archivo_binario=bytes_archivo,
                     enviado_por='Profesor',
-                    observaciones="Carga inicial del programa académico.",
+                    observaciones="Carga inicial del programa académico."
                 )
                 db.session.add(nueva_version)
+                
                 nuevo_programa.archivo_word = nombre_original
                 nuevo_programa.hash_archivo = hash_sha256
+                
+            elif file:
+                flash('Archivo no permitido. Solo .doc, .docx y .pdf', 'danger')
+                return render_template('agregar.html', form=form)
 
-            nueva_revision = RevisionProgramaM(
-                cod_pro=f"PROG-{nuevo_programa.id}",
-                cod_doc=cod_doc,
-                cod_car_mat=cod_car_mat,
-                fec_rev=date.today(),
-                est_rev='En Revisión',
-                nom_arc=nuevo_programa.archivo_word or 'Sin Archivo',
-                obs_rev=(form.descripcion.data or '')[:200],
-                cod_lap=cod_lap,
-            )
-            db.session.add(nueva_revision)
             db.session.commit()
-
-            flash("Programa académico registrado exitosamente con integridad curricular.", "success")
+            flash("Programa académico y archivo registrados exitosamente.", "success")
             return redirect(url_for('index'))
 
         except IntegrityError as e:
             db.session.rollback()
-            msg, categoria = mensaje_error_integridad(e)
-            flash(msg, categoria)
+            flash(f"Error de integridad (Código ya registrado): {str(e)}", "danger")
         except Exception as e:
             db.session.rollback()
             flash(f"Error inesperado: {str(e)}", "danger")
 
-    return render_template(
-        'agregar.html',
-        form=form,
-        carreras=carreras,
-        lapsos=lapsos,
-        decanatos=decanatos,
-    )
+    return render_template('agregar.html', form=form)
+
+
+@app.route('/agregar_docente', methods=['GET', 'POST'])
+def agregar_docente():
+    if request.method == 'POST':
+        # 1. Capturamos los datos directamente del formulario HTML
+        nombre = request.form.get('nombre')
+        email = request.form.get('correo')
+        
+        # Validamos rápidamente que al menos el nombre no venga vacío
+        if nombre:
+            # 2. Creamos el registro del docente
+            nuevo_docente = Docente(nombre=nombre, email=email)
+            
+            try:
+                db.session.add(nuevo_docente)
+                db.session.commit()
+                flash('Docente registrado con éxito', 'success')
+                return redirect(url_for('index'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error inesperado: {str(e)}', 'danger')
+        else:
+            flash('El nombre del docente es obligatorio', 'danger')
+            
+    return render_template('agregar_docente.html')
+
 
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
-    programa = db.session.get(Programa, id) or Programa.query.get_or_404(id)
+    programa = Programa.query.get_or_404(id)
     form = ProgramaForm(obj=programa)
-
-    try:
-        form.docente.choices = [
-            (str(d.cod_doc).strip(), f"{(d.nom_doc or '').strip()} {(d.ape_doc or '').strip()}".strip())
-            for d in DocenteT.query.all()
-        ]
-    except Exception:
-        form.docente.choices = []
-
-    decanatos = DecanatoT.query.order_by(DecanatoT.nom_dec.asc()).all()
-    carreras = CarreraMateriaM.query.all()
-    lapsos = LapsoAcademicoT.query.all()
-    valid_cods = {val for val, _ in form.docente.choices}
-    docente_actual = str(programa.cod_doc or '').strip()
-
-    if request.method == 'GET':
-        if docente_actual in valid_cods:
-            form.docente.data = docente_actual
-    elif request.method == 'POST':
-        candidato = (request.form.get('cod_doc') or request.form.get('docente') or '').strip()
-        if candidato in valid_cods:
-            form.docente.data = candidato
-        elif docente_actual in valid_cods:
-            form.docente.data = docente_actual
-
     if form.validate_on_submit():
-        cod_doc = (form.docente.data or '').strip()
-        cod_car_mat = (request.form.get('cod_car_mat') or '').strip()
-        cod_lap = (request.form.get('cod_lap') or '').strip()
-        estado_seleccionado = (request.form.get('estado_actual') or programa.estado_actual or 'En Revisión').strip()
-        observacion_rev = (request.form.get('observaciones_revision') or '').strip()
-
-        if not cod_doc or not cod_car_mat or not cod_lap:
-            flash('Debe seleccionar obligatoriamente un Docente, una Materia del Pensum y un Lapso Académico.', 'danger')
-            return render_template(
-                'editar.html',
-                form=form,
-                programa=programa,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-                estado_seleccionado=estado_seleccionado,
-                observacion_rev=observacion_rev,
-            )
-        car_mat = db.session.get(CarreraMateriaM, cod_car_mat)
-        if not car_mat:
-            flash('La asignación carrera-materia-pensum seleccionada no es válida.', 'danger')
-            return render_template(
-                'editar.html',
-                form=form,
-                programa=programa,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-            )
-
-        if not db.session.get(DocenteT, cod_doc):
-            flash('El docente seleccionado no existe en docente_t.', 'danger')
-            return render_template(
-                'editar.html',
-                form=form,
-                programa=programa,
-                carreras=carreras,
-                lapsos=lapsos,
-                decanatos=decanatos,
-            )
-
-        materia_maestra = db.session.get(MateriasProgramasT, car_mat.cod_mat)
-        programa.asignatura_unidad_Curricular = materia_maestra.nom_mat if materia_maestra else form.nombre.data.strip()
-        programa.semestre = car_mat.semestre or programa.semestre
-        programa.cod_car_mat = cod_car_mat
-
         try:
-            programa.nombre = form.nombre.data.strip()
-            programa.area_curricular = form.area_curricular.data.strip()
-            programa.eje_curricular = form.eje_curricular.data.strip()
-            programa.codigo = form.codigo.data.strip()
-            programa.coordinador_asignatura_unidad = form.coordinador_asignatura_unidad.data.strip()
-            programa.lapso_academico = cod_lap
-            programa.prelacion = (form.prelacion.data or '').strip() or None
-            programa.modalidad = form.modalidad.data.strip()
-            programa.unidad_credito = form.unidad_credito.data
-            programa.credito_academico = form.credito_academico.data
-            programa.ht = form.ht.data
-            programa.hp = form.hp.data
-            programa.htp = form.htp.data
-            programa.descripcion = form.descripcion.data.strip()
-            programa.cod_doc = cod_doc
-            programa.cod_lap = cod_lap
-            programa.estado_actual = estado_seleccionado
+            # 1. Guardamos los cambios de los campos de texto
+            form.populate_obj(programa)
+            programa.docente = form.docente.data
 
-            if estado_seleccionado == 'Devuelto al Profesor':
-                programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data or date.today()
-            elif form.fecha_ultima_correcion.data:
-                programa.fecha_ultima_correcion = form.fecha_ultima_correcion.data
-
-            file = request.files.get('archivo_word')
-            if file and file.filename != '' and allowed_file(file.filename):
-                nombre_original = secure_filename(file.filename)
-                file.stream.seek(0)
-                bytes_archivo = file.stream.read()
-                hash_sha256 = hashlib.sha256(bytes_archivo).hexdigest()
-
-                ultima_version = (
-                    ProgramaVersion.query.filter_by(programa_id=programa.id)
-                    .order_by(ProgramaVersion.version_numero.desc())
-                    .first()
-                )
-                nuevo_num_version = (ultima_version.version_numero + 1) if ultima_version else 1
-
-                nueva_version = ProgramaVersion(
-                    programa_id=programa.id,
-                    version_numero=nuevo_num_version,
-                    nombre_archivo_real=nombre_original,
-                    archivo_binario=bytes_archivo,
-                    enviado_por='Profesor',
-                    observaciones="Actualización del programa académico.",
-                )
-                db.session.add(nueva_version)
-                programa.archivo_word = nombre_original
-                programa.hash_archivo = hash_sha256
-
-            # Actualiza o registra la traza vigente en revision_programa_m (clave: PROG-<id>)
-            obs_final = observacion_rev or (
-                "Devuelto al docente responsable para correcciones en el documento."
-                if estado_seleccionado == 'Devuelto al Profesor'
-                else (form.descripcion.data or '')
-            )
-            codigo_revision = f"PROG-{programa.id}"
-            revision_existente = RevisionProgramaM.query.filter_by(cod_pro=codigo_revision).first()
-
-            if revision_existente:
-                revision_existente.cod_doc = cod_doc
-                revision_existente.cod_car_mat = cod_car_mat
-                revision_existente.fec_rev = date.today()
-                revision_existente.est_rev = estado_seleccionado
-                revision_existente.nom_arc = programa.archivo_word or 'Sin Archivo'
-                revision_existente.obs_rev = obs_final
-                revision_existente.cod_lap = cod_lap
-            else:
-                nueva_revision = RevisionProgramaM(
-                    cod_pro=codigo_revision,
-                    cod_doc=cod_doc,
-                    cod_car_mat=cod_car_mat,
-                    fec_rev=date.today(),
-                    est_rev=estado_seleccionado,
-                    nom_arc=programa.archivo_word or 'Sin Archivo',
-                    obs_rev=obs_final,
-                    cod_lap=cod_lap,
-                )
-                db.session.add(nueva_revision)
+            # 2. Extrayemos el archivo directamente del objeto del formulario
+            file = form.archivo_word.data
+            
+            # Verificación blindada de tipos y existencia
+            if file and hasattr(file, 'filename') and file.filename != '':
+                if allowed_file(file.filename):
+                    nombre_original = secure_filename(file.filename)
+                    file.stream.seek(0)
+                    bytes_archivo = file.stream.read()
+                    hash_sha256 = hashlib.sha256(bytes_archivo).hexdigest()
+                    
+                    # Calcular el número de la siguiente versión
+                    num_versiones = ProgramaVersion.query.filter_by(programa_id=programa.id).count()
+                    nueva_version_num = num_versiones + 1
+                    
+                    nueva_version = ProgramaVersion(
+                        programa_id=programa.id,
+                        version_numero=nueva_version_num,
+                        nombre_archivo_real=nombre_original,
+                        archivo_binario=bytes_archivo,
+                        enviado_por='Profesor',
+                        observaciones=request.form.get('observaciones', 'Nueva versión cargada desde edición.')
+                    )
+                    db.session.add(nueva_version)
+                    
+                    # Actualizamos los metadatos en el registro principal
+                    programa.archivo_word = nombre_original
+                    programa.hash_archivo = hash_sha256
+                    programa.estado_actual = 'Reenviado'
+                else:
+                    flash('Archivo no permitido. Solo .doc, .docx y .pdf', 'danger')
+                    return render_template('editar.html', form=form, programa=programa)
 
             db.session.commit()
-            flash("Programa académico actualizado exitosamente.", "success")
+            flash("Programa académico actualizado correctamente.", "success")
             return redirect(url_for('index'))
 
         except IntegrityError as e:
             db.session.rollback()
-            msg, categoria = mensaje_error_integridad(e)
-            flash(msg, categoria)
+            flash(f"Error de integridad al actualizar: {str(e)}", "danger")
         except Exception as e:
             db.session.rollback()
-            flash(f"Error al actualizar: {str(e)}", "danger")
+            flash(f"Error inesperado: {str(e)}", "danger")
 
-    return render_template(
-        'editar.html',
-        form=form,
-        programa=programa,
-        carreras=carreras,
-        lapsos=lapsos,
-        decanatos=decanatos,
-    )    
+    return render_template('editar.html', form=form, programa=programa)
 
 @app.route('/eliminar/<int:id>', methods=['POST', 'GET'])
 def eliminar(id):
@@ -918,27 +390,52 @@ def eliminar(id):
     try:
         db.session.delete(programa)
         db.session.commit()
-        flash("Programa y su historial eliminados correctamente.", "success")
-    except IntegrityError as e:
-        db.session.rollback()
-        msg, categoria = mensaje_error_integridad(e)
-        flash(msg, categoria)
+        flash("Programa y todo su historial de versiones eliminados de MySQL.", "success")
     except Exception as e:
         db.session.rollback()
-        flash(f"Error al eliminar: {str(e)}", "danger")
+        flash(f"Error al eliminar el programa: {str(e)}", "danger")
     return redirect(url_for('index'))
 
+@app.route('/descargar/<filename>')
+def descargar_archivo(filename):
+    try:
+        # Buscamos directamente el archivo por su nombre real en el historial de versiones
+        version_archivo = ProgramaVersion.query.filter_by(nombre_archivo_real=filename).first_or_404()
+            
+        if not version_archivo or not version_archivo.archivo_binario:
+            flash("El archivo solicitado no se encuentra en el repositorio de la base de datos.", "danger")
+            return redirect(url_for('index'))
+            
+        # Retornamos los bytes exactos de la versión seleccionada (sea V1, V2 o V3)
+        return Response(
+            version_archivo.archivo_binario,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={version_archivo.nombre_archivo_real}"}
+        )
+    except Exception as e:
+        flash(f"Error al descargar el documento: {str(e)}", "danger")
+        return redirect(url_for('index'))
 
 @app.route('/ver/<int:id>')
 def ver(id):
-    programa = Programa.query.options(joinedload(Programa.versiones)).get_or_404(id)
-    return render_template('ver.html', programa=programa)
+    programa = Programa.query.get_or_404(id)
+    
+    # Buscamos las versiones de este programa ordenadas de la última (más reciente) a la primera
+    versiones = ProgramaVersion.query.filter_by(programa_id=id).order_by(ProgramaVersion.version_numero.desc()).all()
+    
+    # Enviamos tanto el programa como su historial de versiones a la plantilla
+    return render_template('ver.html', programa=programa, versiones=versiones)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return render_template('500.html'), 500
 
 
-@app.context_processor
-def inject_current_year():
-    return {'current_year': datetime.now().year}
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    with app.app_context():        
+        db.create_all()
+    app.run(debug=True, host='0.0.0.0', port=5001) 

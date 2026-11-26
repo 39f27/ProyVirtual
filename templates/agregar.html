@@ -1,7 +1,6 @@
-{% extends "base.html" %}
-{% block title %}Agregar Nuevo Programa{% endblock %}
-
+{% extends "base.html" %} {% block title %}Agregar Nuevo Programa{% endblock %}
 {% block content %}
+
 <div
   class="container mb-5 mx-auto px-3"
   style="max-width: 920px; margin-top: 90px; padding-right: 25px"
@@ -41,50 +40,14 @@
         class="needs-validation"
       >
         {{ form.hidden_tag() }}
-
         <h5 class="text-primary border-bottom pb-2 mb-3">
-          🏛️ Selección en Cascada (Decanato → Carrera → Asignatura)
-        </h5>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label for="decanato_id" class="form-label">
-              <strong>Decanato</strong>
-            </label>
-            <select id="decanato_id" name="decanato_id" class="form-select">
-              <option value="">-- Seleccione Decanato --</option>
-              {% for dec in decanatos or [] %}
-              <option value="{{ dec.cod_dec }}">
-                {{ dec.cod_dec }} - {{ dec.nom_dec }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-4 mb-3">
-            <label for="carrera_id" class="form-label">
-              <strong>Carrera</strong>
-            </label>
-            <select id="carrera_id" name="carrera_id" class="form-select" disabled>
-              <option value="">Seleccione un decanato primero</option>
-            </select>
-          </div>
-
-          <div class="col-md-4 mb-3">
-            <label for="materia_id" class="form-label">
-              <strong>Asignatura del Pensum</strong>
-            </label>
-            <select id="materia_id" name="materia_id" class="form-select" disabled>
-              <option value="">Seleccione una carrera primero</option>
-            </select>
-          </div>
-        </div>
-
-        <h5 class="text-primary border-bottom pb-2 mb-3 mt-4">
           📋 Datos de Identificación
         </h5>
         <div class="row">
           <div class="col-md-3 mb-3">
-            <label for="codigo" class="form-label"><strong>Código</strong></label>
+            <label for="codigo" class="form-label"
+              ><strong>Código</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -96,9 +59,9 @@
             />
           </div>
           <div class="col-md-9 mb-3">
-            <label for="nombre" class="form-label">
-              <strong>Nombre del Programa</strong>
-            </label>
+            <label for="nombre" class="form-label"
+              ><strong>Nombre del Programa</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -113,9 +76,9 @@
 
         <div class="row">
           <div class="col-md-7 mb-3">
-            <label for="asignatura_unidad_Curricular" class="form-label">
-              <strong>Asignatura / Unidad Curricular</strong>
-            </label>
+            <label for="asignatura_unidad_Curricular" class="form-label"
+              ><strong>Asignatura / Unidad Curricular</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -127,9 +90,9 @@
             />
           </div>
           <div class="col-md-5 mb-3">
-            <label for="coordinador_asignatura_unidad" class="form-label">
-              <strong>Coordinador de Asignatura</strong>
-            </label>
+            <label for="coordinador_asignatura_unidad" class="form-label"
+              ><strong>Coordinador de Asignatura</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -143,13 +106,13 @@
         </div>
 
         <h5 class="text-primary border-bottom pb-2 mb-3 mt-4">
-          🗂️ Ubicación Curricular y Gestión
+          🏛️ Ubicación Curricular y Gestión
         </h5>
         <div class="row">
           <div class="col-md-4 mb-3">
-            <label for="area_curricular" class="form-label">
-              <strong>Área Curricular</strong>
-            </label>
+            <label for="area_curricular" class="form-label"
+              ><strong>Área Curricular</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -161,9 +124,9 @@
             />
           </div>
           <div class="col-md-4 mb-3">
-            <label for="eje_curricular" class="form-label">
-              <strong>Eje Curricular</strong>
-            </label>
+            <label for="eje_curricular" class="form-label"
+              ><strong>Eje Curricular</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -175,9 +138,9 @@
             />
           </div>
           <div class="col-md-4 mb-3">
-            <label for="semestre" class="form-label">
-              <strong>Semestre / Trayecto</strong>
-            </label>
+            <label for="semestre" class="form-label"
+              ><strong>Semestre / Trayecto</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -192,9 +155,9 @@
 
         <div class="row">
           <div class="col-md-4 mb-3">
-            <label for="lapso_academico" class="form-label">
-              <strong>Lapso Académico</strong>
-            </label>
+            <label for="lapso_academico" class="form-label"
+              ><strong>Lapso Académico</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -206,9 +169,9 @@
             />
           </div>
           <div class="col-md-4 mb-3">
-            <label for="modalidad" class="form-label">
-              <strong>Modalidad</strong>
-            </label>
+            <label for="modalidad" class="form-label"
+              ><strong>Modalidad</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -220,9 +183,9 @@
             />
           </div>
           <div class="col-md-4 mb-3">
-            <label for="prelacion" class="form-label">
-              <strong>Prelación (Opcional)</strong>
-            </label>
+            <label for="prelacion" class="form-label"
+              ><strong>Prelación (Opcional)</strong></label
+            >
             <input
               type="text"
               class="form-control"
@@ -235,35 +198,10 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="cod_car_mat" class="form-label">
-              <strong>Materia del Pensum (Carrera-Materia)</strong>
-            </label>
-            <select name="cod_car_mat" id="cod_car_mat" class="form-select" required>
-              <option value="" disabled selected>-- Seleccione una Materia del Pensum --</option>
-              {% for car in carreras or [] %}
-              <option value="{{ car.cod_car_mat }}">{{ car.cod_car_mat }} (Semestre {{ car.semestre }})</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label for="cod_lap" class="form-label">
-              <strong>Lapso Académico (Catálogo)</strong>
-            </label>
-            <select name="cod_lap" id="cod_lap" class="form-select" required>
-              <option value="" disabled selected>-- Seleccione el Lapso Académico --</option>
-              {% for lap in lapsos or [] %}
-              <option value="{{ lap.cod_lap }}">{{ lap.cod_lap }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
-        <div class="row">
           <div class="col-md-12 mb-3">
-            <label for="docente" class="form-label">
-              <strong>Docente Responsable (Maestro)</strong>
-            </label>
+            <label for="docente" class="form-label"
+              ><strong>Docente Responsable (Maestro)</strong></label
+            >
             {{ form.docente(class="form-select", id="docente") }}
           </div>
         </div>
@@ -273,7 +211,9 @@
         </h5>
         <div class="row">
           <div class="col-md-2 col-6 mb-3">
-            <label for="unidad_credito" class="form-label"><strong>U.C.</strong></label>
+            <label for="unidad_credito" class="form-label"
+              ><strong>U.C.</strong></label
+            >
             <input
               type="number"
               class="form-control"
@@ -286,7 +226,9 @@
             />
           </div>
           <div class="col-md-2 col-6 mb-3">
-            <label for="credito_academico" class="form-label"><strong>Créditos Acad.</strong></label>
+            <label for="credito_academico" class="form-label"
+              ><strong>Créditos Acad.</strong></label
+            >
             <input
               type="number"
               class="form-control"
@@ -340,9 +282,9 @@
           📝 Sinopsis / Descripción
         </h5>
         <div class="mb-3">
-          <label for="descripcion" class="form-label">
-            <strong>Descripción General de la Unidad Curricular</strong>
-          </label>
+          <label for="descripcion" class="form-label"
+            ><strong>Descripción General de la Unidad Curricular</strong></label
+          >
           <textarea
             class="form-control"
             id="descripcion"
@@ -350,7 +292,9 @@
             rows="4"
             placeholder="Ingrese la fundamentación o propósito general de la asignatura..."
             required
-          >{{ form.descripcion.data or '' }}</textarea>
+          >
+{{ form.descripcion.data or '' }}</textarea
+          >
         </div>
 
         <h5 class="text-primary border-bottom pb-2 mb-3 mt-4">
@@ -369,9 +313,9 @@
             </p>
 
             <div class="mb-2">
-              <label for="archivo_word" class="form-label small">
-                <strong>Seleccionar Archivo Word (.docx) o PDF</strong>
-              </label>
+              <label for="archivo_word" class="form-label small"
+                ><strong>Seleccionar Archivo Word (.docx) o PDF</strong></label
+              >
               <input
                 type="file"
                 class="form-control"
@@ -389,7 +333,9 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+          <a href="{{ url_for('index') }}" class="btn btn-secondary"
+            >Cancelar</a
+          >
           <button type="submit" class="btn btn-success px-4">
             💾 Guardar y Enviar a Revisión
           </button>
@@ -399,98 +345,4 @@
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const selDecanato = document.getElementById('decanato_id');
-    const selCarrera = document.getElementById('carrera_id');
-    const selMateria = document.getElementById('materia_id');
-  
-    const inputCodigo = document.getElementById('codigo');
-    const inputAsignatura = document.getElementById('asignatura_unidad_Curricular');
-    const inputSemestre = document.getElementById('semestre');
-    const selectCodCarMat = document.getElementById('cod_car_mat');
-  
-    if (!selDecanato || !selCarrera || !selMateria) return;
-  
-    selDecanato.addEventListener('change', async function () {
-      selCarrera.innerHTML = '<option value="">Cargando carreras...</option>';
-      selCarrera.disabled = true;
-      selMateria.innerHTML = '<option value="">Seleccione una carrera primero</option>';
-      selMateria.disabled = true;
-  
-      if (!this.value) {
-        selCarrera.innerHTML = '<option value="">Seleccione un decanato primero</option>';
-        return;
-      }
-  
-      try {
-        const res = await fetch(`/api/carreras/${encodeURIComponent(this.value)}`);
-        const carreras = await res.json();
-  
-        if (!Array.isArray(carreras) || carreras.length === 0) {
-          selCarrera.innerHTML = '<option value="">Sin carreras registradas para este decanato</option>';
-          return;
-        }
-  
-        selCarrera.innerHTML = '<option value="">-- Seleccione Carrera --</option>';
-        carreras.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.cod_car;
-          opt.dataset.nombre = c.nom_car || '';
-          opt.textContent = `${c.cod_car} - ${c.nom_car || ''}`;
-          selCarrera.appendChild(opt);
-        });
-        selCarrera.disabled = false;
-      } catch (err) {
-        console.error('Error cargando carreras:', err);
-        selCarrera.innerHTML = '<option value="">Error al cargar carreras</option>';
-      }
-    });
-  
-    selCarrera.addEventListener('change', async function () {
-      selMateria.innerHTML = '<option value="">Cargando asignaturas...</option>';
-      selMateria.disabled = true;
-  
-      if (!this.value) {
-        selMateria.innerHTML = '<option value="">Seleccione una carrera primero</option>';
-        return;
-      }
-  
-      try {
-        const res = await fetch(`/api/materias-por-carrera/${encodeURIComponent(this.value)}`);
-        const materias = await res.json();
-  
-        if (!Array.isArray(materias) || materias.length === 0) {
-          selMateria.innerHTML = '<option value="">Sin asignaturas asociadas a esta carrera</option>';
-          return;
-        }
-  
-        selMateria.innerHTML = '<option value="">-- Seleccione Unidad Curricular --</option>';
-        materias.forEach(m => {
-          const opt = document.createElement('option');
-          opt.value = m.cod_car_mat;
-          opt.dataset.codMat = m.cod_mat || '';
-          opt.dataset.nombre = m.nom_mat || '';
-          opt.dataset.semestre = m.semestre || '';
-          opt.textContent = `[${m.cod_mat}] ${m.nom_mat} (${m.pensum || 'Pensum'} - Sem. ${m.semestre || 'N/A'})`;
-          selMateria.appendChild(opt);
-        });
-        selMateria.disabled = false;
-      } catch (err) {
-        console.error('Error cargando asignaturas:', err);
-        selMateria.innerHTML = '<option value="">Error al cargar asignaturas</option>';
-      }
-    });
-  
-    selMateria.addEventListener('change', function () {
-      const opt = this.options[this.selectedIndex];
-      if (!opt || !opt.value) return;
-  
-      if (selectCodCarMat) selectCodCarMat.value = opt.value;
-      if (inputCodigo && opt.dataset.codMat) inputCodigo.value = opt.dataset.codMat;
-      if (inputAsignatura && opt.dataset.nombre) inputAsignatura.value = opt.dataset.nombre;
-      if (inputSemestre && opt.dataset.semestre) inputSemestre.value = opt.dataset.semestre;
-    });
-  });
-  </script>
-  {% endblock %}
+{% endblock %}

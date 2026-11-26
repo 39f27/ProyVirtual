@@ -33,6 +33,7 @@
             padding: 0;
         }
 
+        /* Contenedor Principal */
         .container {
             width: 100%;
             max-width: 1200px;
@@ -40,11 +41,12 @@
             padding: 2rem 1rem;
         }
 
+        /* Encabezado */
         .header-section {
             background-color: var(--bg-card);
             border-radius: 12px;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--border-color);
             display: flex;
@@ -73,6 +75,7 @@
             font-size: 1rem;
         }
 
+        /* Contenedor del Logo */
         .logo-container {
             width: 160px;
             height: 90px;
@@ -92,12 +95,9 @@
             object-fit: contain;
         }
 
+        /* Botón de Agregar */
         .btn-action-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
             margin-bottom: 1.5rem;
-            align-items: center;
         }
 
         .btn-add {
@@ -107,7 +107,7 @@
             background-color: var(--success-color);
             color: #ffffff;
             font-weight: 600;
-            padding: 0.7rem 1.2rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 8px;
             text-decoration: none;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -118,224 +118,15 @@
             background-color: var(--success-hover);
         }
 
-        .btn-docente {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            background-color: var(--primary-color);
-            color: #ffffff;
-            font-weight: 600;
-            font-size: 0.9rem;
-            padding: 0.7rem 1.15rem;
-            border-radius: 8px;
-            border: 1px solid var(--primary-color);
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.2s ease;
+        .btn-add:active {
+            transform: scale(0.98);
         }
 
-        .btn-docente:hover {
-            background-color: var(--primary-hover);
-        }
-
-        /* Tarjeta y grilla para el módulo de filtros */
-        .card {
-            background-color: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-        }
-
-        .card-header {
-            background-color: #ffffff;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .card-header h5 {
-            color: var(--primary-color);
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .card-body {
-            padding: 1.25rem 1.5rem;
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-            align-items: end;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-            margin-bottom: 0.85rem;
-        }
-
-        .filter-grid .form-group {
-            margin-bottom: 0;
-        }
-
-        .form-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        .form-control,
-        .form-select {
-            width: 100%;
-            padding: 0.55rem 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            color: var(--text-main);
-            background-color: #ffffff;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.55rem 0.95rem;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            border: 1px solid transparent;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: #ffffff;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-success-solid {
-            background-color: var(--success-color);
-            color: #ffffff;
-        }
-
-        .btn-success-solid:hover {
-            background-color: var(--success-hover);
-        }
-
-        .btn-outline-secondary {
-            background-color: #ffffff;
-            color: var(--text-muted);
-            border-color: #cbd5e1;
-        }
-
-        .btn-warning {
-            background-color: #f59e0b;
-            color: #ffffff;
-        }
-
-        .btn-danger {
-            background-color: #dc2626;
-            color: #ffffff;
-        }
-
-        /* Mensajes flash */
-        .flash-container {
-            margin-bottom: 1.25rem;
-        }
-
-        .flash-msg {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: 1px solid transparent;
-        }
-
-        .flash-success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
-        .flash-danger  { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-        .flash-warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
-
-        /* Modal nativo + estilo compatible con Bootstrap */
-        .custom-modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            z-index: 1050;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        .custom-modal-backdrop.is-open {
-            display: flex;
-        }
-
-        .custom-modal-dialog {
-            width: 100%;
-            max-width: 480px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .custom-modal-header {
-            background: var(--success-color);
-            color: #ffffff;
-            padding: 1rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .custom-modal-header h5 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .custom-modal-close {
-            background: transparent;
-            border: none;
-            color: #ffffff;
-            font-size: 1.4rem;
-            line-height: 1;
-            cursor: pointer;
-            padding: 0 0.25rem;
-        }
-
-        .custom-modal-body {
-            padding: 1.25rem;
-        }
-
-        .custom-modal-footer {
-            padding: 0.9rem 1.25rem;
-            background: #f8fafc;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.6rem;
-        }
-
+        /* Tabla y Contenedor */
         .table-container {
             background-color: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-color);
             overflow: hidden;
         }
@@ -357,12 +148,12 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            padding: 1rem 1.25rem;
+            padding: 1rem 1.5rem;
             border-bottom: 2px solid var(--border-color);
         }
 
         td {
-            padding: 0.9rem 1.25rem;
+            padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.875rem;
             color: var(--text-main);
@@ -377,6 +168,7 @@
             background-color: #f8fafc;
         }
 
+        /* Código Resaltado */
         .code-badge {
             font-family: monospace;
             font-weight: 700;
@@ -387,42 +179,46 @@
             border: 1px solid #dbeafe;
         }
 
-        .action-links {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .pagination-bar {
-            display: flex;
-            justify-content: center;
-            gap: 0.4rem;
-            margin-top: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .page-link {
-            display: inline-block;
-            padding: 0.4rem 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            background: #ffffff;
-            color: var(--primary-color);
+        /* Enlaces de Descarga */
+        .link-download {
+            color: #2563eb;
             text-decoration: none;
-            font-size: 0.85rem;
             font-weight: 600;
         }
 
-        .page-item.active .page-link {
-            background: var(--primary-color);
-            color: #ffffff;
-            border-color: var(--primary-color);
+        .link-download:hover {
+            text-decoration: underline;
         }
 
-        .page-item.disabled .page-link {
-            opacity: 0.5;
-            pointer-events: none;
+        /* Acciones de Edición/Eliminación */
+        .action-links {
+            display: flex;
+            gap: 1rem;
         }
 
+        .btn-edit {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .btn-edit:hover {
+            color: #3730a3;
+            text-decoration: underline;
+        }
+
+        .btn-delete {
+            color: #dc2626;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .btn-delete:hover {
+            color: #991b1b;
+            text-decoration: underline;
+        }
+
+        /* Estado Vacío */
         .empty-state {
             text-align: center;
             padding: 3.5rem 1.5rem;
@@ -435,6 +231,12 @@
             display: block;
         }
 
+        .empty-state p {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        /* Pie de Página */
         footer {
             margin-top: 3rem;
             border-top: 1px solid var(--border-color);
@@ -448,145 +250,31 @@
 <body>
 
     <main class="container">
+        
         <!-- Encabezado con Título e Imagen -->
         <div class="header-section">
             <div class="title-group">
                 <h1>Lista de Programas</h1>
                 <p>Gestión y control de unidades curriculares</p>
             </div>
+            <!-- Contenedor de la Imagen Institucional -->
             <div class="logo-container">
                 <img src="/static/imaucla.jpg" alt="Logo UCLA" onerror="this.style.display='none'">
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="flash-container">
-                {% for category, message in messages %}
-                <div class="flash-msg flash-{{ category if category in ['success', 'danger', 'warning'] else 'success' }}">
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        {% endwith %}
-
-        <!-- Botones de Acción -->
+        <!-- Botón de Acción -->
         <div class="btn-action-container">
-            <a href="{{ url_for('agregar') }}" class="btn-add">
+            <a href="/agregar" class="btn-add">
+                <!-- Icono de suma (+) en SVG -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 Agregar Programa
             </a>
-
-            <button
-                type="button"
-                id="btnAbrirModalDocente"
-                class="btn-docente"
-                data-bs-toggle="modal"
-                data-bs-target="#modalAgregarDocente"
-            >
-                👨‍🏫 Agregar Docente
-            </button>
-
-            <a
-                href="{{ url_for('exportar_csv', docente=filtros.docente, carrera=filtros.carrera, materia=filtros.materia, estatus=filtros.estatus, desde=filtros.desde, hasta=filtros.hasta) }}"
-                class="btn btn-outline-secondary"
-            >
-                📥 Exportar CSV
+            <a href="{{ url_for('agregar_docente') }}" class="btn btn-outline-primary">
+                + Registrar Docente
             </a>
-        </div>
-
-        <!-- MÓDULO UNIFICADO DE FILTROS - PROYVIRTUAL -->
-        <div class="card">
-            <div class="card-header">
-                <h5>🔎 Búsqueda y Filtros de Unidades Curriculares</h5>
-                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Limpiar filtros</a>
-            </div>
-            <div class="card-body">
-                <form method="GET" action="{{ url_for('index') }}" class="filter-grid">
-                    <div class="form-group">
-                        <label for="filtroDocente" class="form-label">Docente (Nombre, Apellido o Cédula)</label>
-                        <input
-                            type="text"
-                            id="filtroDocente"
-                            name="docente"
-                            class="form-control"
-                            placeholder="Ej. Silva o V-12456789"
-                            value="{{ filtros.docente if filtros else '' }}"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filtroCarrera" class="form-label">Carrera</label>
-                        <select id="filtroCarrera" name="carrera" class="form-select">
-                            <option value="">-- Todas las carreras ({{ carreras|length }}) --</option>
-                            {% for car in carreras %}
-                                <option
-                                    value="{{ car.cod_car }}"
-                                    {% if filtros and filtros.carrera == car.cod_car %}selected{% endif %}
-                                >
-                                    {{ car.cod_car }} - {{ car.nom_car }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filtroMateria" class="form-label">Materia o Código</label>
-                        <input
-                            type="text"
-                            id="filtroMateria"
-                            name="materia"
-                            class="form-control"
-                            placeholder="Ej. PRG-102 o Bases de Datos"
-                            value="{{ filtros.materia if filtros else '' }}"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filtroEstatus" class="form-label">Estatus del Programa</label>
-                        <select id="filtroEstatus" name="estatus" class="form-select">
-                            <option value="">-- Todos los estatus --</option>
-                            {% for est in ['Borrador', 'En Revisión', 'Observado', 'Aprobado'] %}
-                                <option
-                                    value="{{ est }}"
-                                    {% if filtros and filtros.estatus == est %}selected{% endif %}
-                                >
-                                    {{ est }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filtroDesde" class="form-label">Fecha Desde</label>
-                        <input
-                            type="date"
-                            id="filtroDesde"
-                            name="desde"
-                            class="form-control"
-                            value="{{ filtros.desde if filtros else '' }}"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="filtroHasta" class="form-label">Fecha Hasta</label>
-                        <input
-                            type="date"
-                            id="filtroHasta"
-                            name="hasta"
-                            class="form-control"
-                            value="{{ filtros.hasta if filtros else '' }}"
-                        />
-                    </div>
-
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Aplicar filtros</button>
-                    </div>
-                </form>
-            </div>
         </div>
 
         <!-- Tabla de Contenido -->
@@ -606,6 +294,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Integración con la base de datos mediante Jinja2 -->
                         {% if programas %}
                             {% for programa in programas %}
                             <tr>
@@ -613,35 +302,32 @@
                                 <td style="font-weight: 600;">{{ programa.asignatura_unidad_Curricular }}</td>
                                 <td>{{ programa.area_curricular }}</td>
                                 <td style="text-align: center; font-weight: 600;">{{ programa.semestre }}</td>
-                                <td>
-                                    {% if programa.docente_maestro %}
-                                        {{ programa.docente_maestro.nom_doc or '' }} {{ programa.docente_maestro.ape_doc or '' }}
-                                    {% else %}
-                                        Sin asignar
-                                    {% endif %}
-                                </td>
+                                <td>{{ programa.docente.nombre if programa.docente else 'Sin asignar' }}</td>
                                 <td>{{ programa.estado_actual }}</td>
                                 <td>
-                                    {% if programa.archivo_word %}
-                                        <a href="{{ url_for('ver', id=programa.id) }}" style="color: #0d6efd !important; font-weight: bold; text-decoration: underline;">
-                                            {{ programa.archivo_word }}
-                                        </a>
-                                    {% else %}
-                                        <span style="color: #6c757d; font-style: italic;">No adjunto</span>
+                                  {% if programa.archivo_word %}
+                                    <a href="/descargar/{{ programa.id }}" class="badge bg-primary text-wrap" style="color: #0d6efd !impor
+                                    tant; font-weight: bold; text-decoration: underline;">
+                                        {{ programa.archivo_word }}
+                                    </a>
+                                  {% else %}
+                                    <span style="color: #6c757d; font-style: italic;">No adjunto</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     <div class="action-links">
-                                        <a href="{{ url_for('editar', id=programa.id) }}" class="btn btn-warning">Editar</a>
-                                        <a href="{{ url_for('eliminar', id=programa.id) }}" class="btn btn-danger" onclick="return confirm('¿Estás seguro de eliminar este programa?');">Eliminar</a>
+                                        <a href="/editar/{{ programa.id }}" class="btn-edit">Editar</a>
+                                        <a href="/eliminar/{{ programa.id }}" class="btn-delete" onclick="return confirm('¿Seguro que deseas eliminar este programa?');">Eliminar</a>
                                     </div>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
+                            <!-- Estado Vacío (Si la base de datos no tiene registros) -->
                             <tr>
                                 <td colspan="8">
                                     <div class="empty-state">
+                                        <!-- Icono de documento vacío SVG -->
                                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
@@ -655,179 +341,12 @@
             </div>
         </div>
 
-        <!-- Paginación conservando los filtros activos -->
-        {% if pagination and pagination.pages > 1 %}
-        <nav aria-label="Paginación de programas" class="pagination-bar">
-            <span class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('index', page=pagination.prev_num, docente=filtros.docente, carrera=filtros.carrera, materia=filtros.materia, estatus=filtros.estatus, desde=filtros.desde, hasta=filtros.hasta) if pagination.has_prev else '#' }}">Anterior</a>
-            </span>
-            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                {% if p %}
-                    <span class="page-item {% if p == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('index', page=p, docente=filtros.docente, carrera=filtros.carrera, materia=filtros.materia, estatus=filtros.estatus, desde=filtros.desde, hasta=filtros.hasta) }}">{{ p }}</a>
-                    </span>
-                {% else %}
-                    <span class="page-item disabled"><span class="page-link">…</span></span>
-                {% endif %}
-            {% endfor %}
-            <span class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('index', page=pagination.next_num, docente=filtros.docente, carrera=filtros.carrera, materia=filtros.materia, estatus=filtros.estatus, desde=filtros.desde, hasta=filtros.hasta) if pagination.has_next else '#' }}">Siguiente</a>
-            </span>
-        </nav>
-        {% endif %}
-
-        <!-- Modal Agregar Docente -->
-        <div
-            class="modal fade custom-modal-backdrop"
-            id="modalAgregarDocente"
-            tabindex="-1"
-            role="dialog"
-            aria-labelledby="modalAgregarDocenteLabel"
-            aria-hidden="true"
-        >
-            <div class="modal-dialog modal-dialog-centered custom-modal-dialog" role="document">
-                <div class="modal-content">
-                    <form action="{{ url_for('agregar_docente') }}" method="POST">
-                        <div class="modal-header custom-modal-header">
-                            <h5 class="modal-title" id="modalAgregarDocenteLabel">
-                                👨‍🏫 Registrar Nuevo Docente
-                            </h5>
-                            <button
-                                type="button"
-                                class="btn-close btn-close-white custom-modal-close"
-                                id="btnCerrarModalDocente"
-                                data-bs-dismiss="modal"
-                                aria-label="Cerrar"
-                            >&times;</button>
-                        </div>
-
-                        <div class="modal-body custom-modal-body">
-                            {% if form and form.csrf_token %}
-                                {{ form.csrf_token }}
-                            {% elif csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                            {% endif %}
-
-                            <div class="form-group">
-                                <label for="cod_doc" class="form-label">
-                                    <strong>Código / Cédula del Docente</strong>
-                                </label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="cod_doc"
-                                    name="cod_doc"
-                                    maxlength="20"
-                                    placeholder="Ej: V-12345678 o DOC-01"
-                                    required
-                                />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="nom_doc" class="form-label">
-                                    <strong>Nombres</strong>
-                                </label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="nom_doc"
-                                    name="nom_doc"
-                                    maxlength="100"
-                                    placeholder="Ej: Carlos José"
-                                    required
-                                />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ape_doc" class="form-label">
-                                    <strong>Apellidos</strong>
-                                </label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="ape_doc"
-                                    name="ape_doc"
-                                    maxlength="100"
-                                    placeholder="Ej: Linares Torralba"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div class="modal-footer custom-modal-footer">
-                            <button
-                                type="button"
-                                class="btn btn-outline-secondary"
-                                id="btnCancelarModalDocente"
-                                data-bs-dismiss="modal"
-                            >
-                                Cancelar
-                            </button>
-                            <button type="submit" class="btn btn-success-solid">
-                                💾 Guardar Docente
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     </main>
 
+    <!-- Pie de Página Institucional -->
     <footer>
-        <p>© {{ current_year or 2026 }} Universidad Centroccidental Lisandro Alvarado</p>
+        <p>© 2026 Universidad Centroccidental Lisandro Alvarado</p>
     </footer>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const modalEl = document.getElementById('modalAgregarDocente');
-        const btnOpen = document.getElementById('btnAbrirModalDocente');
-        const btnClose = document.getElementById('btnCerrarModalDocente');
-        const btnCancel = document.getElementById('btnCancelarModalDocente');
-        const inputCodDoc = document.getElementById('cod_doc');
-
-        if (!modalEl || !btnOpen) return;
-
-        const hasBootstrapModal = typeof window.bootstrap !== 'undefined' && typeof window.bootstrap.Modal === 'function';
-
-        function openModal() {
-            if (hasBootstrapModal) {
-                const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-                instance.show();
-            } else {
-                modalEl.classList.add('is-open');
-                modalEl.setAttribute('aria-hidden', 'false');
-            }
-            if (inputCodDoc) {
-                setTimeout(() => inputCodDoc.focus(), 50);
-            }
-        }
-
-        function closeModal() {
-            if (hasBootstrapModal) {
-                const instance = window.bootstrap.Modal.getInstance(modalEl);
-                if (instance) instance.hide();
-            } else {
-                modalEl.classList.remove('is-open');
-                modalEl.setAttribute('aria-hidden', 'true');
-            }
-        }
-
-        if (!hasBootstrapModal) {
-            btnOpen.addEventListener('click', openModal);
-            if (btnClose) btnClose.addEventListener('click', closeModal);
-            if (btnCancel) btnCancel.addEventListener('click', closeModal);
-
-            modalEl.addEventListener('click', (e) => {
-                if (e.target === modalEl) closeModal();
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && modalEl.classList.contains('is-open')) {
-                    closeModal();
-                }
-            });
-        }
-    });
-    </script>
 </body>
 </html>
